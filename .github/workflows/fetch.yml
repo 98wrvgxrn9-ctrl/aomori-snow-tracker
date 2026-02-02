@@ -22,12 +22,12 @@ jobs:
       - name: 依存関係インストール
         run: pip install -r requirements.txt
 
-      - name: 認証ファイル作成
-        run: echo "${{ secrets.GOOGLE_CREDENTIALS_B64 }}" | base64 -d > /tmp/gcp-creds.json
+      - name: Google認証
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
 
       - name: KML取得・解析
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcp-creds.json
         run: python scripts/fetch_kml.py
 
       - name: 変更をコミット・プッシュ
