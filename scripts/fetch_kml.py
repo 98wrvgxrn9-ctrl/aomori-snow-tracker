@@ -140,11 +140,14 @@ def save_to_json(data, dirpath):
 
 def save_to_sheets(data):
     """Googleスプレッドシートに追記"""
-    creds_json = os.environ.get("GOOGLE_CREDENTIALS")
-    if not creds_json:
-        print("GOOGLE_CREDENTIALS環境変数が設定されていません。スプレッドシート保存をスキップ。")
+    import base64
+
+    creds_b64 = os.environ.get("GOOGLE_CREDENTIALS_B64")
+    if not creds_b64:
+        print("GOOGLE_CREDENTIALS_B64環境変数が設定されていません。スプレッドシート保存をスキップ。")
         return None
 
+    creds_json = base64.b64decode(creds_b64).decode("utf-8")
     creds_data = json.loads(creds_json)
     creds = Credentials.from_service_account_info(creds_data, scopes=SCOPES)
     client = gspread.authorize(creds)

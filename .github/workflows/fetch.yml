@@ -24,7 +24,7 @@ jobs:
 
       - name: KML取得・解析
         env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          GOOGLE_CREDENTIALS_B64: ${{ secrets.GOOGLE_CREDENTIALS_B64 }}
         run: python scripts/fetch_kml.py
 
       - name: 変更をコミット・プッシュ
