@@ -140,16 +140,12 @@ def save_to_json(data, dirpath):
 
 def save_to_sheets(data):
     """Googleスプレッドシートに追記"""
-    import base64
-
-    creds_b64 = os.environ.get("GOOGLE_CREDENTIALS_B64")
-    if not creds_b64:
-        print("GOOGLE_CREDENTIALS_B64環境変数が設定されていません。スプレッドシート保存をスキップ。")
+    creds_file = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if not creds_file or not os.path.exists(creds_file):
+        print("認証ファイルが見つかりません。スプレッドシート保存をスキップ。")
         return None
 
-    creds_json = base64.b64decode(creds_b64).decode("utf-8")
-    creds_data = json.loads(creds_json)
-    creds = Credentials.from_service_account_info(creds_data, scopes=SCOPES)
+    creds = Credentials.from_service_account_file(creds_file, scopes=SCOPES)
     client = gspread.authorize(creds)
 
     spreadsheet = client.open_by_key(SPREADSHEET_ID)
@@ -191,10 +187,10 @@ def main():
     json_path = save_to_json(data, data_dir)
     print(f"JSON保存: {json_path}")
 
-    # Googleスプレッドシート保存（一時的に無効化）
-    # sheets_result = save_to_sheets(data)
-    # if sheets_result:
-    #     print(f"スプレッドシート保存完了: {sheets_result}")
+    # Googleスプレッドシート保存
+    sheets_result = save_to_sheets(data)
+    if sheets_result:
+        print(f"スプレッドシート保存完了: {sheets_result}")
 
     # ステータス集計
     status_count = {}
