@@ -191,10 +191,10 @@ def main():
     json_path = save_to_json(data, data_dir)
     print(f"JSON保存: {json_path}")
 
-    # Googleスプレッドシート保存
-    sheets_result = save_to_sheets(data)
-    if sheets_result:
-        print(f"スプレッドシート保存完了: {sheets_result}")
+    # Googleスプレッドシート保存（一時的に無効化）
+    # sheets_result = save_to_sheets(data)
+    # if sheets_result:
+    #     print(f"スプレッドシート保存完了: {sheets_result}")
 
     # ステータス集計
     status_count = {}
