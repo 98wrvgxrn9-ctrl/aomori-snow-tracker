@@ -25,3 +25,6 @@
 pip install -r requirements.txt
 python scripts/fetch_kml.py
 ```
+## Note
+- 実験的実装を含みます
+- 本番運用前のプロトタイプです
