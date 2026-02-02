@@ -23,6 +23,8 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: KML取得・解析
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: python scripts/fetch_kml.py
 
       - name: 変更をコミット・プッシュ

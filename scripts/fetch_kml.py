@@ -11,7 +11,13 @@ from datetime import datetime, timezone, timedelta
 from io import BytesIO
 from xml.etree import ElementTree as ET
 
+import gspread
+from google.oauth2.service_account import Credentials
 import requests
+
+# Google Sheets設定
+SPREADSHEET_ID = "1Wd_2gVBruM-fwAZB3KkRxIEn1bOSVph0VFJfPwI2UH8"
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 # Google マイマップのKMLエクスポートURL
 KML_URL = "https://www.google.com/maps/d/kml?mid=1Ydi7GSvJ_4zOLatVL_FOUMwoZdTN-_8"
@@ -132,6 +138,33 @@ def save_to_json(data, dirpath):
     return filepath
 
 
+def save_to_sheets(data):
+    """Googleスプレッドシートに追記"""
+    creds_json = os.environ.get("GOOGLE_CREDENTIALS")
+    if not creds_json:
+        print("GOOGLE_CREDENTIALS環境変数が設定されていません。スプレッドシート保存をスキップ。")
+        return None
+
+    creds_data = json.loads(creds_json)
+    creds = Credentials.from_service_account_info(creds_data, scopes=SCOPES)
+    client = gspread.authorize(creds)
+
+    spreadsheet = client.open_by_key(SPREADSHEET_ID)
+    sheet = spreadsheet.sheet1
+
+    timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S")
+
+    # ヘッダーがなければ追加
+    if sheet.row_count == 0 or sheet.cell(1, 1).value != "取得日時":
+        sheet.append_row(["取得日時", "工区", "ステータス"])
+
+    # データを追記
+    rows = [[timestamp, row["工区"], row["ステータス"]] for row in data]
+    sheet.append_rows(rows)
+
+    return timestamp
+
+
 def main():
     print("KMLを取得中...")
     kml_content = fetch_kml()
@@ -154,6 +187,11 @@ def main():
     # JSONスナップショット保存
     json_path = save_to_json(data, data_dir)
     print(f"JSON保存: {json_path}")
+
+    # Googleスプレッドシート保存
+    sheets_result = save_to_sheets(data)
+    if sheets_result:
+        print(f"スプレッドシート保存完了: {sheets_result}")
 
     # ステータス集計
     status_count = {}
