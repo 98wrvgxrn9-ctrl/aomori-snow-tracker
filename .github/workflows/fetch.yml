@@ -1,0 +1,34 @@
+name: 除排雪状況取得
+
+on:
+  schedule:
+    # 毎時0分に実行（UTC）→ 日本時間で毎時9分
+    - cron: '0 * * * *'
+  workflow_dispatch:  # 手動実行用
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 依存関係インストール
+        run: pip install -r requirements.txt
+
+      - name: KML取得・解析
+        run: python scripts/fetch_kml.py
+
+      - name: 変更をコミット・プッシュ
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "data: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M') の状況を記録"
+          git push
