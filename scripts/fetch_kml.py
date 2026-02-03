@@ -20,22 +20,36 @@ SPREADSHEET_ID = "1Wd_2gVBruM-fwAZB3KkRxIEn1bOSVph0VFJfPwI2UH8"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 # Google マイマップのKMLエクスポートURL
-KML_URL = "https://www.google.com/maps/d/kml?mid=1Ydi7GSvJ_4zOLatVL_FOUMwoZdTN-_8"
+MAPS = {
+    "koku": {
+        "name": "工区",
+        "url": "https://www.google.com/maps/d/kml?mid=1Ydi7GSvJ_4zOLatVL_FOUMwoZdTN-_8",
+    },
+    "rosen": {
+        "name": "路線",
+        "url": "https://www.google.com/maps/d/kml?mid=1F5gwcVsyYVRxAz0hVJUid5v2T3e5hA4",
+    },
+}
 
 # ステータスの色コード対応
 STATUS_COLORS = {
+    # 工区用
     "#DB4436": "作業中",
     "#0288D1": "現場確認中",
     "#FFDD5E": "作業予定あり",
+    # 路線用
+    "#FF5252": "作業中",
+    "#FFD600": "作業予定あり",
+    "#FBC02D": "作業予定あり",  # 別の黄色
 }
 
 # 日本時間
 JST = timezone(timedelta(hours=9))
 
 
-def fetch_kml():
+def fetch_kml(url):
     """KMZ(ZIP)をダウンロードしてKMLを抽出"""
-    response = requests.get(KML_URL, timeout=30)
+    response = requests.get(url, timeout=30)
     response.raise_for_status()
 
     with zipfile.ZipFile(BytesIO(response.content)) as zf:
@@ -57,10 +71,15 @@ def parse_kml(kml_content):
     style_colors = {}
     for style in root.findall('.//kml:Style', ns):
         style_id = style.get('id', '')
+        # PolyStyle（工区用）
         poly_style = style.find('.//kml:PolyStyle/kml:color', ns)
-        if poly_style is not None:
+        # LineStyle（路線用）
+        line_style = style.find('.//kml:LineStyle/kml:color', ns)
+
+        color_elem = poly_style if poly_style is not None else line_style
+        if color_elem is not None:
             # KMLの色はAABBGGRR形式なのでRGBに変換
-            abgr = poly_style.text
+            abgr = color_elem.text
             if abgr and len(abgr) == 8:
                 rgb = '#' + abgr[6:8] + abgr[4:6] + abgr[2:4]
                 style_colors[style_id] = rgb.upper()
@@ -121,10 +140,13 @@ def save_to_csv(data, filepath):
     return timestamp
 
 
-def save_to_json(data, dirpath):
+def save_to_json(data, dirpath, prefix=""):
     """JSON形式でスナップショット保存"""
     timestamp = datetime.now(JST)
-    filename = timestamp.strftime("%Y%m%d_%H%M%S.json")
+    if prefix:
+        filename = f"{prefix}_{timestamp.strftime('%Y%m%d_%H%M%S')}.json"
+    else:
+        filename = timestamp.strftime("%Y%m%d_%H%M%S.json")
     filepath = os.path.join(dirpath, filename)
 
     snapshot = {
@@ -166,42 +188,40 @@ def save_to_sheets(data):
 
 
 def main():
-    print("KMLを取得中...")
-    kml_content = fetch_kml()
-
-    print("解析中...")
-    data = parse_kml(kml_content)
-
-    print(f"工区数: {len(data)}")
-
     # データディレクトリ
     script_dir = os.path.dirname(os.path.abspath(__file__))
     data_dir = os.path.join(script_dir, '..', 'data')
     os.makedirs(data_dir, exist_ok=True)
 
-    # CSV保存
-    csv_path = os.path.join(data_dir, 'history.csv')
-    timestamp = save_to_csv(data, csv_path)
-    print(f"CSV保存: {csv_path}")
+    for map_id, map_info in MAPS.items():
+        print(f"\n=== {map_info['name']}（{map_id}）===")
 
-    # JSONスナップショット保存
-    json_path = save_to_json(data, data_dir)
-    print(f"JSON保存: {json_path}")
+        print("KMLを取得中...")
+        kml_content = fetch_kml(map_info['url'])
 
-    # Googleスプレッドシート保存（無効化中）
-    # sheets_result = save_to_sheets(data)
-    # if sheets_result:
-    #     print(f"スプレッドシート保存完了: {sheets_result}")
+        print("解析中...")
+        data = parse_kml(kml_content)
 
-    # ステータス集計
-    status_count = {}
-    for row in data:
-        s = row["ステータス"]
-        status_count[s] = status_count.get(s, 0) + 1
+        print(f"件数: {len(data)}")
 
-    print(f"\n[{timestamp}] ステータス集計:")
-    for status, count in sorted(status_count.items()):
-        print(f"  {status}: {count}件")
+        # CSV保存（マップごとに別ファイル）
+        csv_path = os.path.join(data_dir, f'history_{map_id}.csv')
+        timestamp = save_to_csv(data, csv_path)
+        print(f"CSV保存: {csv_path}")
+
+        # JSONスナップショット保存
+        json_path = save_to_json(data, data_dir, prefix=map_id)
+        print(f"JSON保存: {json_path}")
+
+        # ステータス集計
+        status_count = {}
+        for row in data:
+            s = row["ステータス"]
+            status_count[s] = status_count.get(s, 0) + 1
+
+        print(f"[{timestamp}] ステータス集計:")
+        for status, count in sorted(status_count.items()):
+            print(f"  {status}: {count}件")
 
 
 if __name__ == "__main__":
