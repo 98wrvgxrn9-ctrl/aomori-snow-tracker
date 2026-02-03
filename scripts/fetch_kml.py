@@ -24,10 +24,14 @@ MAPS = {
     "koku": {
         "name": "工区",
         "url": "https://www.google.com/maps/d/kml?mid=1Ydi7GSvJ_4zOLatVL_FOUMwoZdTN-_8",
+        "name_field": "name",
+        "col_name": "工区",
     },
     "rosen": {
         "name": "路線",
         "url": "https://www.google.com/maps/d/kml?mid=1F5gwcVsyYVRxAz0hVJUid5v2T3e5hA4",
+        "name_field": "description",
+        "col_name": "路線",
     },
 }
 
@@ -60,25 +64,22 @@ def fetch_kml(url):
     raise ValueError("KMLファイルが見つかりません")
 
 
-def parse_kml(kml_content):
-    """KMLを解析して工区ごとのステータスを抽出"""
+def parse_kml(kml_content, name_field="name"):
+    """KMLを解析して工区/路線ごとのステータスを抽出"""
     root = ET.fromstring(kml_content)
 
     # KML名前空間
     ns = {'kml': 'http://www.opengis.net/kml/2.2'}
 
-    # スタイルID→色のマッピングを構築
+    # スタイルID→色のマッピングを構築（工区用）
     style_colors = {}
     for style in root.findall('.//kml:Style', ns):
         style_id = style.get('id', '')
-        # PolyStyle（工区用）
         poly_style = style.find('.//kml:PolyStyle/kml:color', ns)
-        # LineStyle（路線用）
         line_style = style.find('.//kml:LineStyle/kml:color', ns)
 
         color_elem = poly_style if poly_style is not None else line_style
         if color_elem is not None:
-            # KMLの色はAABBGGRR形式なのでRGBに変換
             abgr = color_elem.text
             if abgr and len(abgr) == 8:
                 rgb = '#' + abgr[6:8] + abgr[4:6] + abgr[2:4]
@@ -96,33 +97,38 @@ def parse_kml(kml_content):
                 if ref in style_colors:
                     style_map[sm_id] = style_colors[ref]
 
-    # 全スタイルをマージ
     all_styles = {**style_colors, **style_map}
 
     # Placemarkを解析
     results = []
     for placemark in root.findall('.//kml:Placemark', ns):
         name_elem = placemark.find('kml:name', ns)
+        desc_elem = placemark.find('kml:description', ns)
         style_url_elem = placemark.find('kml:styleUrl', ns)
 
-        if name_elem is not None:
-            name = name_elem.text or ""
+        if name_field == "description":
+            # 路線: nameがステータス、descriptionが路線名
+            item_name = desc_elem.text if desc_elem is not None and desc_elem.text else ""
+            status = name_elem.text if name_elem is not None and name_elem.text else "不明"
+        else:
+            # 工区: nameが工区名、色からステータスを取得
+            item_name = name_elem.text if name_elem is not None else ""
             status = "不明"
-
             if style_url_elem is not None:
                 style_ref = style_url_elem.text.lstrip('#')
                 color = all_styles.get(style_ref, "")
                 status = STATUS_COLORS.get(color, f"不明({color})")
 
+        if item_name:
             results.append({
-                "工区": name,
+                "名前": item_name,
                 "ステータス": status
             })
 
     return results
 
 
-def save_to_csv(data, filepath):
+def save_to_csv(data, filepath, col_name="工区"):
     """CSVに追記保存"""
     timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -132,10 +138,10 @@ def save_to_csv(data, filepath):
         writer = csv.writer(f)
 
         if not file_exists:
-            writer.writerow(["取得日時", "工区", "ステータス"])
+            writer.writerow(["取得日時", col_name, "ステータス"])
 
         for row in data:
-            writer.writerow([timestamp, row["工区"], row["ステータス"]])
+            writer.writerow([timestamp, row["名前"], row["ステータス"]])
 
     return timestamp
 
@@ -200,13 +206,13 @@ def main():
         kml_content = fetch_kml(map_info['url'])
 
         print("解析中...")
-        data = parse_kml(kml_content)
+        data = parse_kml(kml_content, name_field=map_info.get('name_field', 'name'))
 
         print(f"件数: {len(data)}")
 
         # CSV保存（マップごとに別ファイル）
         csv_path = os.path.join(data_dir, f'history_{map_id}.csv')
-        timestamp = save_to_csv(data, csv_path)
+        timestamp = save_to_csv(data, csv_path, col_name=map_info.get('col_name', '名前'))
         print(f"CSV保存: {csv_path}")
 
         # JSONスナップショット保存
