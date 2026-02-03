@@ -140,12 +140,13 @@ def save_to_json(data, dirpath):
 
 def save_to_sheets(data):
     """Googleスプレッドシートに追記"""
-    creds_file = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-    if not creds_file or not os.path.exists(creds_file):
-        print("認証ファイルが見つかりません。スプレッドシート保存をスキップ。")
+    creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+    if not creds_json:
+        print("GOOGLE_CREDENTIALS_JSON環境変数が設定されていません。スプレッドシート保存をスキップ。")
         return None
 
-    creds = Credentials.from_service_account_file(creds_file, scopes=SCOPES)
+    creds_data = json.loads(creds_json)
+    creds = Credentials.from_service_account_info(creds_data, scopes=SCOPES)
     client = gspread.authorize(creds)
 
     spreadsheet = client.open_by_key(SPREADSHEET_ID)
