@@ -1,0 +1,29 @@
+{
+  "total_cost": 1.43,
+  "total_tweets": 110,
+  "total_users": 88,
+  "runs": [
+    {
+      "timestamp": "2026-02-12T17:26:41.095241+09:00",
+      "tweets_fetched": 10,
+      "new_tweets": 10,
+      "cost": 0.05
+    },
+    {
+      "timestamp": "2026-02-12T18:19:35.020216+09:00",
+      "tweets_fetched": 50,
+      "users_fetched": 44,
+      "accepted_posts": 0,
+      "new_posts": 0,
+      "cost": 0.69
+    },
+    {
+      "timestamp": "2026-02-12T18:22:49.594661+09:00",
+      "tweets_fetched": 50,
+      "users_fetched": 44,
+      "accepted_posts": 2,
+      "new_posts": 2,
+      "cost": 0.69
+    }
+  ]
+}

@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>青森市 除排雪スケジュールマップ</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif; }
+
+    #header {
+      background: #1a3a5c;
+      color: #fff;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    #header h1 { font-size: 16px; font-weight: bold; }
+    #header small { font-size: 11px; opacity: 0.7; }
+
+    #main { display: flex; height: calc(100vh - 44px); }
+    #map { flex: 1; min-width: 0; }
+
+    /* サイドパネル */
+    #panel {
+      width: 420px;
+      background: #f8f9fa;
+      border-left: 1px solid #ddd;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    #panel-header {
+      background: #fff;
+      padding: 14px 16px;
+      border-bottom: 1px solid #eee;
+    }
+    #panel-header h2 { font-size: 14px; color: #333; margin-bottom: 4px; }
+    #panel-header p { font-size: 12px; color: #888; }
+
+    #panel-content {
+      padding: 12px 16px;
+      flex: 1;
+    }
+
+    /* 選択時の情報カード */
+    .info-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .info-card .area-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #1a3a5c;
+      margin-bottom: 8px;
+    }
+    .info-card .schedule-date {
+      font-size: 28px;
+      font-weight: bold;
+      color: #e74c3c;
+      margin: 8px 0;
+      line-height: 1.2;
+    }
+    .info-card .schedule-date.confirmed {
+      color: #e74c3c;
+    }
+    .info-card .schedule-date.checking {
+      color: #3498db;
+    }
+    .info-card .schedule-date.adjusting {
+      color: #e67e22;
+    }
+    .info-card .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .info-card .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-top: 1px solid #f0f0f0;
+      font-size: 13px;
+    }
+    .info-card .detail-row .label { color: #888; }
+    .info-card .detail-row .value { color: #333; font-weight: 500; }
+    .info-card .directive-duration {
+      background: #fdf2f2;
+      border: 1px solid #f5c6cb;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin: 8px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .info-card .directive-duration .dur-label {
+      font-size: 12px;
+      color: #856404;
+    }
+    .info-card .directive-duration .dur-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #c0392b;
+    }
+
+    /* 統計サマリー */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .summary-item {
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px 10px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .summary-item .count {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .summary-item .label {
+      font-size: 10px;
+      color: #666;
+      margin-top: 2px;
+    }
+    .count-scheduled { color: #e74c3c; }
+    .count-checking { color: #3498db; }
+    .count-adjusting { color: #e67e22; }
+
+    /* エリアリスト */
+    .area-list { margin-top: 8px; }
+    .area-list h3 {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .area-item {
+      background: #fff;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.15s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .area-item:hover { background: #e8f4fd; }
+    .area-item .name { font-size: 13px; font-weight: 500; color: #333; }
+    .area-item .date { font-size: 12px; font-weight: bold; }
+
+    /* フィルター */
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 5px 12px;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      background: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { border-color: #999; }
+    .filter-btn.active { background: #1a3a5c; color: #fff; border-color: #1a3a5c; }
+
+    /* レスポンシブ: スマホ */
+    @media (max-width: 768px) {
+      #main { flex-direction: column; height: auto; }
+      #map { height: 50vh; }
+      #panel { width: 100%; height: 50vh; border-left: none; border-top: 1px solid #ddd; }
+      .summary-grid { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    /* 凡例 */
+    .legend {
+      background: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+      font-size: 11px;
+      line-height: 1.8;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-color {
+      width: 14px; height: 10px;
+      border: 1px solid #999;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* X投稿カード */
+    .x-posts-section {
+      margin-top: 12px;
+    }
+    .x-posts-section h4 {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .x-posts-section h4 .x-logo {
+      font-weight: bold;
+      color: #000;
+    }
+    .x-post {
+      background: #fff;
+      border: 1px solid #e1e8ed;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .x-post .x-author {
+      font-size: 12px;
+      color: #536471;
+      margin-bottom: 4px;
+    }
+    .x-post .x-text {
+      color: #0f1419;
+      margin-bottom: 6px;
+    }
+    .x-post .x-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #536471;
+    }
+    .x-post .x-link {
+      color: #1d9bf0;
+      text-decoration: none;
+      font-size: 11px;
+    }
+    .x-post .x-link:hover { text-decoration: underline; }
+    .x-no-posts {
+      font-size: 12px;
+      color: #aaa;
+      text-align: center;
+      padding: 12px;
+    }
+
+    /* 工区ラベル */
+    .area-label {
+      font-size: 10px;
+      font-weight: bold;
+      color: #1a3a5c;
+      white-space: nowrap;
+      text-shadow: 1px 1px 2px #fff, -1px -1px 2px #fff, 1px -1px 2px #fff, -1px 1px 2px #fff;
+      pointer-events: none;
+    }
+    .area-tooltip {
+      font-size: 13px;
+      font-weight: bold;
+      padding: 4px 10px;
+    }
+
+    /* 折りたたみ */
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+    }
+    .collapsible-header h4 {
+      font-size: 15px;
+      color: #1a3a5c;
+    }
+    .collapsible-header .toggle {
+      font-size: 13px;
+      color: #1a3a5c;
+      font-weight: bold;
+    }
+    .collapsible-body {
+      max-height: 200px;
+      overflow-y: auto;
+      transition: max-height 0.2s;
+    }
+    .collapsible-body.collapsed {
+      max-height: 0;
+      overflow: hidden;
+    }
+
+    /* 雪捨て場マーカー */
+    .dump-icon {
+      background: #2ecc71;
+      color: #fff;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      line-height: 1;
+    }
+    .dump-tooltip {
+      font-size: 13px;
+      padding: 6px 10px;
+    }
+
+    /* 初期メッセージ */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 13px; }
+
+    /* 免責・利用規約モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-content {
+      background: #fff;
+      border-radius: 10px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 28px 24px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    .modal-content h2 {
+      font-size: 18px;
+      color: #1a3a5c;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #1a3a5c;
+      padding-bottom: 8px;
+    }
+    .modal-content h3 {
+      font-size: 14px;
+      color: #333;
+      margin: 16px 0 6px;
+    }
+    .modal-content p, .modal-content li {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.8;
+    }
+    .modal-content ul {
+      padding-left: 20px;
+      margin-bottom: 8px;
+    }
+    .modal-close {
+      display: block;
+      margin: 20px auto 0;
+      padding: 8px 32px;
+      background: #1a3a5c;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .modal-close:hover { background: #254d73; }
+    #header .header-link {
+      color: rgba(255,255,255,0.7);
+      font-size: 11px;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-left: 12px;
+    }
+    #header .header-link:hover { color: #fff; }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1>青森市 除排雪スケジュールマップ</h1>
+    <div>
+      <small id="update-time"></small>
+      <a class="header-link" href="https://x.com/aomori_snowatch" target="_blank" rel="noopener">@aomori_snowatch</a>
+      <span class="header-link" onclick="openModal()">免責事項・利用規約</span>
+    </div>
+  </div>
+
+  <!-- 免責事項・利用規約モーダル -->
+  <div class="modal-overlay" id="terms-modal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <h2>免責事項・利用規約</h2>
+
+      <h3>1. 本サービスについて</h3>
+      <p>本マップ（以下「本サービス」）は、青森市の除排雪状況を市民が把握しやすくすることを目的とした非公式の情報提供ツールです。青森市役所および関連行政機関とは一切関係がありません。</p>
+
+      <h3>2. 情報の正確性</h3>
+      <ul>
+        <li>本サービスに掲載される情報は、公開データおよびSNS投稿を自動収集・加工したものであり、正確性・完全性・最新性を保証するものではありません。</li>
+        <li>除排雪の作業予定・実施状況は予告なく変更される場合があります。最新の公式情報は<a href="https://www.city.aomori.aomori.jp/" target="_blank" rel="noopener">青森市公式サイト</a>をご確認ください。</li>
+      </ul>
+
+      <h3>3. 免責事項</h3>
+      <ul>
+        <li>本サービスの利用により生じたいかなる損害についても、運営者は一切の責任を負いません。</li>
+        <li>除排雪作業の遅延・未実施等に関する判断は、必ず公式情報に基づいて行ってください。</li>
+      </ul>
+
+      <h3>4. SNS投稿の取り扱い</h3>
+      <ul>
+        <li>X（旧Twitter）の投稿は、X社のAPI利用規約に基づき取得・表示しています。</li>
+        <li>投稿の掲載に問題がある場合は、運営者までご連絡ください。速やかに対応いたします。</li>
+        <li>元の投稿が削除された場合、本サービスからも削除されます。</li>
+      </ul>
+
+      <h3>5. データソース</h3>
+      <ul>
+        <li>除排雪スケジュール: 青森市公開データ（Google マイマップ）</li>
+        <li>地図タイル: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</li>
+        <li>市民の声: X（旧Twitter）API</li>
+        <li>雪捨て場: 青森市公開情報</li>
+      </ul>
+
+      <h3>6. 禁止事項</h3>
+      <ul>
+        <li>本サービスのデータを商用目的で無断転載・再配布すること</li>
+        <li>本サービスを利用した誹謗中傷・虚偽情報の拡散</li>
+      </ul>
+
+      <h3>7. お問い合わせ</h3>
+      <p>掲載内容に関するお問い合わせ・削除依頼は、X（<a href="https://x.com/aomori_snowatch" target="_blank" rel="noopener">@aomori_snowatch</a>）のDMまたはGitHubリポジトリのIssueまでご連絡ください。</p>
+
+      <button class="modal-close" onclick="closeModal()">閉じる</button>
+    </div>
+  </div>
+  <div id="main">
+    <div id="map"></div>
+    <div id="panel">
+      <div id="panel-header">
+        <h2>除排雪状況</h2>
+        <p>エリアをクリックすると詳細を表示</p>
+      </div>
+      <div id="panel-content">
+        <div id="summary" class="summary-grid"></div>
+        <div id="x-unmatched"></div>
+        <div class="filter-bar" id="filters"></div>
+        <div id="selected-info"></div>
+        <div id="x-posts-container"></div>
+        <div class="area-list">
+          <h3 id="area-list-title">工区一覧</h3>
+          <div id="area-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ステータス判定（部分一致）
+    function classifyStatus(raw) {
+      if (!raw) return 'other';
+      if (raw.includes('作業予定あり') || raw.includes('作業中')) return 'scheduled';
+      if (raw.includes('現場確認中')) return 'checking';
+      if (raw.includes('作業日程調整中')) return 'adjusting';
+      return 'other';
+    }
+
+    const STATUS_CONFIG = {
+      scheduled:  { color: '#e74c3c', label: '作業予定あり', bg: '#e74c3c' },
+      checking:   { color: '#3498db', label: '現場確認中',   bg: '#3498db' },
+      adjusting:  { color: '#e67e22', label: '日程調整中',   bg: '#e67e22' },
+      other:      { color: '#95a5a6', label: 'その他',       bg: '#95a5a6' },
+    };
+
+    function getColor(status) {
+      const cls = classifyStatus(status);
+      return STATUS_CONFIG[cls].color;
+    }
+
+    // 地図初期化
+    const map = L.map('map').setView([40.8225, 140.7474], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 18,
+    }).addTo(map);
+
+    // 全フィーチャー管理
+    let allFeatures = [];
+    let allLayers = [];
+    let selectedLayer = null;
+    let activeFilter = 'all';
+    let xPostsData = [];  // X投稿データ
+    let areasMeta = {};   // 工区メタデータ（centroid, bbox, neighbors）
+    let dumpSites = [];   // 雪捨て場データ
+
+    // スタイル
+    function styleFeature(feature) {
+      const status = feature.properties['ステータス'] || '';
+      const color = getColor(status);
+      const geomType = feature.geometry.type;
+      if (geomType === 'Polygon') {
+        return { color: '#333', weight: 1.5, fillColor: color, fillOpacity: 0.3 };
+      }
+      return { color: color, weight: 4, opacity: 0.8 };
+    }
+
+    function highlightStyle(feature) {
+      const color = getColor(feature.properties['ステータス'] || '');
+      const geomType = feature.geometry.type;
+      if (geomType === 'Polygon') {
+        return { color: '#333', weight: 3, fillColor: color, fillOpacity: 0.6 };
+      }
+      return { color: '#333', weight: 6, opacity: 1 };
+    }
+
+    // 選択時のパネル表示
+    function showDetail(props) {
+      const cls = classifyStatus(props['ステータス']);
+      const cfg = STATUS_CONFIG[cls];
+      const dateText = props['直近作業予定日'] || '未定';
+      const dateClass = cls === 'scheduled' ? 'confirmed' : cls === 'checking' ? 'checking' : 'adjusting';
+
+      let html = '<div class="info-card">';
+      html += `<div class="area-name">${props['名前'] || '不明'}</div>`;
+      html += `<span class="status-badge" style="background:${cfg.bg}">${cfg.label}</span>`;
+      html += `<div class="schedule-date ${dateClass}">${dateText}</div>`;
+      if (props['指令継続']) {
+        html += `<div class="directive-duration"><span class="dur-label">指令継続中</span><span class="dur-value">${props['指令継続']}</span></div>`;
+      }
+      if (props['最終除雪日']) {
+        html += `<div class="detail-row"><span class="label">最終除雪日</span><span class="value" style="font-weight:bold;color:#2c3e50">${props['最終除雪日']}</span></div>`;
+      }
+      if (props['指令']) {
+        html += `<div class="detail-row"><span class="label">指令</span><span class="value">${props['指令']}</span></div>`;
+      }
+      if (props['更新日時']) {
+        html += `<div class="detail-row"><span class="label">更新</span><span class="value">${props['更新日時']}</span></div>`;
+      }
+      if (props['お知らせ']) {
+        html += `<div class="detail-row"><span class="label">お知らせ</span><span class="value">${props['お知らせ']}</span></div>`;
+      }
+
+      // 空間情報（メタデータ）
+      const meta = areasMeta[props['名前']];
+      if (meta) {
+        if (meta.address) {
+          html += `<div class="detail-row"><span class="label">所在地</span><span class="value" style="font-size:11px">${meta.address}</span></div>`;
+        }
+        if (meta.neighbors && meta.neighbors.length > 0) {
+          const shown = meta.neighbors.slice(0, 6);
+          const more = meta.neighbors.length > 6 ? ` 他${meta.neighbors.length - 6}件` : '';
+          html += `<div class="detail-row"><span class="label">隣接</span><span class="value" style="font-size:11px">${shown.join(', ')}${more}</span></div>`;
+        }
+      }
+
+      html += '</div>';
+
+      document.getElementById('selected-info').innerHTML = html;
+      showXPosts(props['名前']);
+
+      // パネルを詳細カードの位置までスクロール
+      document.getElementById('selected-info').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // X投稿の1件分のHTML
+    function renderXPost(post) {
+      let html = '<div class="x-post">';
+      html += `<div class="x-author">${post.author || ''}`;
+      if (post.area) html += ` <span style="color:#aaa;font-size:11px">📍${post.area}</span>`;
+      html += '</div>';
+      html += `<div class="x-text">${post.text || ''}</div>`;
+      html += '<div class="x-meta">';
+      html += `<span>${post.posted_at || ''}</span>`;
+      if (post.url) {
+        html += `<a class="x-link" href="${post.url}" target="_blank" rel="noopener">投稿を見る</a>`;
+      }
+      html += '</div>';
+      html += '</div>';
+      return html;
+    }
+
+    // エリアに紐づくX投稿を表示（隣接工区も含む）
+    function showXPosts(areaName) {
+      const container = document.getElementById('x-posts-container');
+      if (!areaName || xPostsData.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      // このエリア + 隣接エリアの投稿を収集
+      const meta = areasMeta[areaName];
+      const relatedAreas = new Set([areaName]);
+      if (meta && meta.neighbors) {
+        meta.neighbors.forEach(n => relatedAreas.add(n));
+      }
+
+      const directPosts = xPostsData.filter(p => p.area === areaName);
+      const neighborPosts = xPostsData.filter(p => p.area !== areaName && relatedAreas.has(p.area));
+
+      let html = '<div class="x-posts-section">';
+      html += '<h4><span class="x-logo">&#120143;</span> 市民の声</h4>';
+
+      if (directPosts.length === 0 && neighborPosts.length === 0) {
+        html += '<div class="x-no-posts">この工区・近隣の投稿はまだありません</div>';
+      } else {
+        directPosts.forEach(post => { html += renderXPost(post); });
+        if (neighborPosts.length > 0) {
+          html += '<div style="font-size:11px;color:#999;margin:8px 0 4px;border-top:1px solid #eee;padding-top:6px">近隣エリアの投稿</div>';
+          neighborPosts.forEach(post => { html += renderXPost(post); });
+        }
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // 全エリアの工区名セットを作る（未分類判定用）
+    function getKnownAreas() {
+      return new Set(allFeatures.map(f => f.properties['名前']));
+    }
+
+    // 未分類の投稿を折りたたみ式で常時表示
+    function showUnmatchedPosts() {
+      const container = document.getElementById('x-unmatched');
+      if (xPostsData.length === 0) { container.innerHTML = ''; return; }
+
+      const known = getKnownAreas();
+      const unmatched = xPostsData.filter(p => !known.has(p.area));
+
+      if (unmatched.length === 0) { container.innerHTML = ''; return; }
+
+      let html = '<div class="x-posts-section">';
+      html += '<div class="collapsible-header" onclick="toggleUnmatched()">';
+      html += `<h4 style="margin:0"><span class="x-logo">&#120143;</span> 最新の声 (${unmatched.length}件)</h4>`;
+      html += '<span class="toggle" id="unmatched-toggle">▼ 開く</span>';
+      html += '</div>';
+      html += '<div class="collapsible-body collapsed" id="unmatched-body">';
+      unmatched.forEach(post => { html += renderXPost(post); });
+      html += '</div></div>';
+      container.innerHTML = html;
+    }
+
+    window.toggleUnmatched = function() {
+      const body = document.getElementById('unmatched-body');
+      const toggle = document.getElementById('unmatched-toggle');
+      if (body.classList.contains('collapsed')) {
+        body.classList.remove('collapsed');
+        toggle.textContent = '▲ 閉じる';
+      } else {
+        body.classList.add('collapsed');
+        toggle.textContent = '▼ 開く';
+      }
+    };
+
+    // フィーチャークリック
+    function onFeatureClick(e) {
+      const layer = e.target;
+      const feature = layer.feature;
+
+      // 前の選択をリセット
+      if (selectedLayer && selectedLayer !== layer) {
+        selectedLayer.setStyle(styleFeature(selectedLayer.feature));
+      }
+      selectedLayer = layer;
+      layer.setStyle(highlightStyle(feature));
+      showDetail(feature.properties);
+    }
+
+    // エリアリスト構築
+    function buildAreaList(features) {
+      const listEl = document.getElementById('area-list');
+      const filtered = activeFilter === 'all'
+        ? features
+        : features.filter(f => classifyStatus(f.properties['ステータス']) === activeFilter);
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<div class="empty-state"><p>該当するエリアがありません</p></div>';
+        return;
+      }
+
+      // 名前順（アルファベット→五十音）
+      filtered.sort((a, b) => {
+        const na = a.properties['名前'] || '';
+        const nb = b.properties['名前'] || '';
+        return na.localeCompare(nb, 'ja');
+      });
+
+      listEl.innerHTML = filtered.map((f, i) => {
+        const p = f.properties;
+        const cls = classifyStatus(p['ステータス']);
+        const cfg = STATUS_CONFIG[cls];
+        const date = p['直近作業予定日'] || '-';
+        const lastSnow = p['最終除雪日'] || '-';
+        const duration = p['指令継続'] || '';
+        return `<div class="area-item" data-index="${i}" onclick="selectArea(${f._globalIndex})">
+          <div>
+            <span class="name">${p['名前']}</span>
+            <div style="font-size:11px;color:#999;margin-top:2px">前回: ${lastSnow}${duration ? ' / 指令: ' + duration : ''}</div>
+          </div>
+          <span class="date" style="color:${cfg.color}">${date}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // エリアリストからの選択
+    window.selectArea = function(globalIndex) {
+      const item = allLayers[globalIndex];
+      if (!item) return;
+      const { layer, feature } = item;
+
+      if (selectedLayer && selectedLayer !== layer) {
+        selectedLayer.setStyle(styleFeature(selectedLayer.feature));
+      }
+      selectedLayer = layer;
+      layer.setStyle(highlightStyle(feature));
+      showDetail(feature.properties);
+
+      // 地図をパン
+      if (layer.getBounds) {
+        map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 15 });
+      } else if (layer.getLatLng) {
+        map.setView(layer.getLatLng(), 15);
+      }
+    };
+
+    // サマリー表示
+    function buildSummary(features) {
+      const counts = { scheduled: 0, checking: 0, adjusting: 0 };
+      features.forEach(f => {
+        const cls = classifyStatus(f.properties['ステータス']);
+        if (counts[cls] !== undefined) counts[cls]++;
+      });
+
+      document.getElementById('summary').innerHTML = `
+        <div class="summary-item">
+          <div class="count count-scheduled">${counts.scheduled}</div>
+          <div class="label">作業予定あり</div>
+        </div>
+        <div class="summary-item">
+          <div class="count count-checking">${counts.checking}</div>
+          <div class="label">現場確認中</div>
+        </div>
+        <div class="summary-item">
+          <div class="count count-adjusting">${counts.adjusting}</div>
+          <div class="label">日程調整中</div>
+        </div>
+      `;
+    }
+
+    // フィルターボタン
+    function buildFilters() {
+      const filters = [
+        { key: 'all', label: 'すべて' },
+        { key: 'scheduled', label: '作業予定あり' },
+        { key: 'checking', label: '現場確認中' },
+        { key: 'adjusting', label: '日程調整中' },
+      ];
+      document.getElementById('filters').innerHTML = filters.map(f =>
+        `<button class="filter-btn ${f.key === activeFilter ? 'active' : ''}" onclick="setFilter('${f.key}')">${f.label}</button>`
+      ).join('');
+    }
+
+    window.setFilter = function(key) {
+      activeFilter = key;
+      buildFilters();
+      buildAreaList(allFeatures);
+
+      // 地図上のレイヤー表示/非表示
+      allLayers.forEach(({ layer, feature }) => {
+        const cls = classifyStatus(feature.properties['ステータス']);
+        if (key === 'all' || cls === key) {
+          layer.setStyle({ ...styleFeature(feature), opacity: 0.8, fillOpacity: 0.35 });
+        } else {
+          layer.setStyle({ opacity: 0.1, fillOpacity: 0.05, weight: 1 });
+        }
+      });
+    };
+
+    // 凡例
+    const legend = L.control({ position: 'bottomleft' });
+    legend.onAdd = function() {
+      const div = L.DomUtil.create('div', 'legend');
+      const items = [
+        ['作業予定あり', '#e74c3c'],
+        ['現場確認中', '#3498db'],
+        ['日程調整中', '#e67e22'],
+      ];
+      items.forEach(([label, color]) => {
+        div.innerHTML += `<div class="legend-item"><span class="legend-color" style="background:${color}"></span>${label}</div>`;
+      });
+      div.innerHTML += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
+      return div;
+    };
+    legend.addTo(map);
+
+    // データ読み込み
+    function loadGeoJSON(url) {
+      return fetch(url)
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => data.features || [])
+        .catch(err => { console.warn(url, err); return []; });
+    }
+
+    // X投稿データ読み込み
+    function loadXPosts() {
+      return fetch('data/x_posts.json')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => { xPostsData = data.posts || []; })
+        .catch(err => { console.warn('X投稿データ読み込み失敗:', err); xPostsData = []; });
+    }
+
+    // 雪捨て場データ読み込み
+    function loadDumpSites() {
+      return fetch('data/snow_dump_sites.json')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => { dumpSites = data.sites || []; })
+        .catch(err => { console.warn('雪捨て場データ読み込み失敗:', err); dumpSites = []; });
+    }
+
+    // 工区メタデータ読み込み
+    function loadAreasMeta() {
+      return fetch('data/areas_meta.json')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => { areasMeta = data.areas || {}; })
+        .catch(err => { console.warn('メタデータ読み込み失敗:', err); areasMeta = {}; });
+    }
+
+    Promise.all([
+      loadGeoJSON('data/koku.geojson'),
+      loadGeoJSON('data/rosen.geojson'),
+      loadXPosts(),
+      loadAreasMeta(),
+      loadDumpSites(),
+    ]).then(([kokuFeatures, rosenFeatures]) => {
+      const combined = [...kokuFeatures, ...rosenFeatures];
+      allFeatures = combined;
+
+      combined.forEach((feature, i) => {
+        feature._globalIndex = i;
+        const layer = L.geoJSON(feature, {
+          style: styleFeature,
+          onEachFeature: function(feat, lyr) {
+            // ツールチップ（ホバーで工区名表示）
+            lyr.bindTooltip(feat.properties['名前'], {
+              sticky: true,
+              direction: 'top',
+              className: 'area-tooltip',
+            });
+            lyr.on('click', onFeatureClick);
+          }
+        }).addTo(map);
+
+        // geoJSONレイヤーの最初の子レイヤーを取得
+        const innerLayer = layer.getLayers()[0];
+        if (innerLayer) {
+          innerLayer.feature = feature;
+          allLayers.push({ layer: innerLayer, feature: feature });
+        }
+
+        // ポリゴンの中心にラベルを表示
+        if (feature.geometry.type === 'Polygon') {
+          const meta = areasMeta[feature.properties['名前']];
+          if (meta && meta.centroid) {
+            const label = L.marker([meta.centroid[1], meta.centroid[0]], {
+              icon: L.divIcon({
+                className: 'area-label',
+                html: feature.properties['名前'],
+                iconSize: null,
+              }),
+              interactive: false,
+            }).addTo(map);
+          }
+        }
+      });
+
+      // 雪捨て場マーカー表示
+      dumpSites.forEach(site => {
+        if (site.lat == null || site.lng == null) return;
+        const icon = L.divIcon({
+          className: '',
+          html: '<div class="dump-icon">&#10052;</div>',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        });
+        const marker = L.marker([site.lat, site.lng], { icon: icon }).addTo(map);
+        let popupHtml = `<b>${site.name}</b><br>`;
+        popupHtml += `<span style="color:#666">${site.type}</span>`;
+        if (site.hours) popupHtml += `<br>受入時間: ${site.hours}`;
+        if (site.notes) popupHtml += `<br>${site.notes}`;
+        marker.bindPopup(popupHtml);
+        marker.bindTooltip(site.name, { direction: 'top', className: 'dump-tooltip' });
+      });
+
+      buildSummary(combined);
+      buildFilters();
+      buildAreaList(combined);
+      showUnmatchedPosts();
+
+      // 全体表示
+      if (allLayers.length > 0) {
+        const group = L.featureGroup(allLayers.map(l => l.layer));
+        if (group.getBounds().isValid()) {
+          map.fitBounds(group.getBounds(), { padding: [20, 20] });
+        }
+      }
+
+      document.getElementById('update-time').textContent =
+        '最終読込: ' + new Date().toLocaleString('ja-JP');
+    });
+
+    // モーダル制御
+    window.openModal = function() {
+      document.getElementById('terms-modal').classList.add('active');
+    };
+    window.closeModal = function(e) {
+      if (!e || e.target === document.getElementById('terms-modal')) {
+        document.getElementById('terms-modal').classList.remove('active');
+      }
+    };
+  </script>
+</body>
+</html>

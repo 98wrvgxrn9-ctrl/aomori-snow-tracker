@@ -33,10 +33,18 @@ jobs:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
         run: python scripts/sync_notion.py
 
+      - name: X自動投稿（差分がある場合のみ）
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+        run: python scripts/post_to_x.py
+
       - name: 変更をコミット・プッシュ
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
+          git add data/ docs/data/
           git diff --staged --quiet || git commit -m "data: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M') の状況を記録"
           git push

@@ -82,6 +82,40 @@ def get_color_from_style(placemark, all_styles, ns):
     return ""
 
 
+def extract_coordinates(placemark, ns):
+    """Placemarkから座標を抽出し、GeoJSONジオメトリを返す"""
+    # Polygon（工区用）
+    coords_elem = placemark.find('.//kml:Polygon//kml:coordinates', ns)
+    if coords_elem is not None and coords_elem.text:
+        ring = []
+        for coord in coords_elem.text.strip().split():
+            parts = coord.split(',')
+            if len(parts) >= 2:
+                ring.append([float(parts[0]), float(parts[1])])
+        if ring:
+            return {"type": "Polygon", "coordinates": [ring]}
+
+    # LineString（路線用）
+    coords_elem = placemark.find('.//kml:LineString/kml:coordinates', ns)
+    if coords_elem is not None and coords_elem.text:
+        line = []
+        for coord in coords_elem.text.strip().split():
+            parts = coord.split(',')
+            if len(parts) >= 2:
+                line.append([float(parts[0]), float(parts[1])])
+        if line:
+            return {"type": "LineString", "coordinates": line}
+
+    # Point（フォールバック）
+    coords_elem = placemark.find('.//kml:Point/kml:coordinates', ns)
+    if coords_elem is not None and coords_elem.text:
+        parts = coords_elem.text.strip().split(',')
+        if len(parts) >= 2:
+            return {"type": "Point", "coordinates": [float(parts[0]), float(parts[1])]}
+
+    return None
+
+
 def parse_kml(kml_content, name_field="name"):
     """KMLを解析して工区/路線ごとのステータスを抽出"""
     root = ET.fromstring(kml_content)
@@ -122,6 +156,7 @@ def parse_kml(kml_content, name_field="name"):
     for placemark in root.findall('.//kml:Placemark', ns):
         name_elem = placemark.find('kml:name', ns)
         ext = get_extended_data(placemark, ns)
+        geometry = extract_coordinates(placemark, ns)
 
         if ext:
             # 新マップ形式: ExtendedDataから構造化データを取得
@@ -147,6 +182,8 @@ def parse_kml(kml_content, name_field="name"):
                     row["更新日時"] = ext["更新日時"]
                 if ext.get("お知らせ"):
                     row["お知らせ"] = ext["お知らせ"]
+                if geometry:
+                    row["_geometry"] = geometry
                 results.append(row)
         else:
             # 旧マップ形式: フォールバック
@@ -160,10 +197,13 @@ def parse_kml(kml_content, name_field="name"):
                 status = STATUS_COLORS.get(color, f"不明({color})")
 
             if item_name:
-                results.append({
+                row = {
                     "名前": item_name,
-                    "ステータス": status
-                })
+                    "ステータス": status,
+                }
+                if geometry:
+                    row["_geometry"] = geometry
+                results.append(row)
 
     return results
 
@@ -218,6 +258,136 @@ def save_to_json(data, dirpath, prefix=""):
     return filepath
 
 
+def normalize_name(name):
+    """名前の全角/半角を正規化して比較用キーを返す"""
+    import unicodedata
+    return unicodedata.normalize('NFKC', name)
+
+
+def load_last_work_dates(csv_path):
+    """履歴CSVから各エリアの最終作業日（ステータスが「作業中」だった最後の日時）を取得"""
+    last_work = {}
+    if not os.path.exists(csv_path):
+        return last_work
+
+    with open(csv_path, 'r', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        try:
+            next(reader)  # ヘッダースキップ
+        except StopIteration:
+            return last_work
+
+        for row in reader:
+            if len(row) < 3:
+                continue
+            timestamp, name, status = row[0], row[1], row[2]
+            if '作業中' in status:
+                # 元の名前と正規化した名前の両方で記録
+                last_work[name] = timestamp
+                last_work[normalize_name(name)] = timestamp
+
+    return last_work
+
+
+def load_directive_start_dates(csv_path):
+    """履歴CSVから各エリアの現在の指令/作業がいつから続いているかを取得"""
+    first_active = {}
+    if not os.path.exists(csv_path):
+        return first_active
+
+    with open(csv_path, 'r', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        try:
+            next(reader)
+        except StopIteration:
+            return first_active
+
+        for row in reader:
+            if len(row) < 3:
+                continue
+            ts, name, status = row[0], row[1], row[2]
+            shirei = row[4] if len(row) > 4 else ''
+
+            is_active = ('作業中' in status or
+                         '作業予定あり' in status or
+                         shirei in ('新規指令', '継続指令'))
+
+            nname = normalize_name(name)
+            if is_active:
+                if nname not in first_active:
+                    first_active[nname] = ts
+            else:
+                if nname in first_active:
+                    del first_active[nname]
+
+    return first_active
+
+
+def save_to_geojson(data, filepath, last_work_dates=None, directive_starts=None):
+    """GeoJSON形式で保存（地図表示用）"""
+    if last_work_dates is None:
+        last_work_dates = {}
+    if directive_starts is None:
+        directive_starts = {}
+
+    now = datetime.now(JST)
+
+    features = []
+    for row in data:
+        geometry = row.get("_geometry")
+        if not geometry:
+            continue
+        properties = {k: v for k, v in row.items() if k != "_geometry"}
+
+        name = row.get("名前", "")
+        nname = normalize_name(name)
+
+        # 最終除雪日を追加（全角/半角の表記ゆれを吸収）
+        last_date = last_work_dates.get(name) or last_work_dates.get(nname)
+        if last_date:
+            try:
+                dt = datetime.strptime(last_date, "%Y-%m-%d %H:%M:%S")
+                properties["最終除雪日"] = f"{dt.month}月{dt.day}日"
+                properties["最終除雪日時"] = last_date
+            except ValueError:
+                properties["最終除雪日"] = last_date
+
+        # 指令継続時間を追加
+        start_ts = directive_starts.get(nname)
+        if start_ts:
+            try:
+                start_dt = datetime.strptime(start_ts, "%Y-%m-%d %H:%M:%S")
+                start_dt = start_dt.replace(tzinfo=JST)
+                delta = now - start_dt
+                total_hours = int(delta.total_seconds() // 3600)
+                days = total_hours // 24
+                hours = total_hours % 24
+                if days > 0:
+                    properties["指令継続"] = f"{days}日{hours}時間"
+                else:
+                    properties["指令継続"] = f"{hours}時間"
+                properties["指令開始日時"] = start_ts
+            except ValueError:
+                pass
+
+        features.append({
+            "type": "Feature",
+            "properties": properties,
+            "geometry": geometry,
+        })
+
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features,
+    }
+
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(geojson, f, ensure_ascii=False, indent=2)
+
+    return filepath
+
+
 def save_to_sheets(data):
     """Googleスプレッドシートに追記"""
     creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
@@ -251,6 +421,10 @@ def main():
     data_dir = os.path.join(script_dir, '..', 'data')
     os.makedirs(data_dir, exist_ok=True)
 
+    # GeoJSON出力先（docs/data/）
+    docs_data_dir = os.path.join(script_dir, '..', 'docs', 'data')
+    os.makedirs(docs_data_dir, exist_ok=True)
+
     for map_id, map_info in MAPS.items():
         print(f"\n=== {map_info['name']}（{map_id}）===")
 
@@ -270,6 +444,16 @@ def main():
         # JSONスナップショット保存
         json_path = save_to_json(data, data_dir, prefix=map_id)
         print(f"JSON保存: {json_path}")
+
+        # 履歴CSVから最終作業日・指令継続開始日を取得
+        last_work_dates = load_last_work_dates(csv_path)
+        directive_starts = load_directive_start_dates(csv_path)
+        print(f"最終作業日データ: {len(last_work_dates)}件, 指令継続中: {len(directive_starts)}件")
+
+        # GeoJSON保存（地図表示用、毎回上書き）
+        geojson_path = os.path.join(docs_data_dir, f'{map_id}.geojson')
+        save_to_geojson(data, geojson_path, last_work_dates=last_work_dates, directive_starts=directive_starts)
+        print(f"GeoJSON保存: {geojson_path}")
 
         # ステータス集計
         status_count = {}
