@@ -146,7 +146,11 @@
       padding: 12px 10px;
       text-align: center;
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      cursor: pointer;
+      transition: box-shadow 0.15s, transform 0.1s;
     }
+    .summary-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.15); transform: translateY(-1px); }
+    .summary-item.active { outline: 2px solid #1a3a5c; }
     .summary-item .count {
       font-size: 22px;
       font-weight: bold;
@@ -504,12 +508,16 @@
       <div id="panel-content">
         <div id="summary"></div>
         <div id="x-unmatched"></div>
-        <div class="filter-bar" id="filters"></div>
         <div id="selected-info"></div>
         <div id="x-posts-container"></div>
-        <div class="area-list">
-          <h3 id="area-list-title">工区一覧</h3>
-          <div id="area-list"></div>
+        <div id="area-list-section" style="display:none">
+          <div class="collapsible-header" onclick="toggleAreaList()">
+            <h4 id="area-list-title" style="margin:0">一覧</h4>
+            <span class="toggle" id="area-list-toggle">▲ 閉じる</span>
+          </div>
+          <div id="area-list-body">
+            <div id="area-list"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -548,7 +556,6 @@
     let allFeatures = [];
     let allLayers = [];
     let selectedLayer = null;
-    let activeFilter = 'all';
     let xPostsData = [];  // X投稿データ
     let areasMeta = {};   // 工区メタデータ（centroid, bbox, neighbors）
     let dumpSites = [];   // 雪捨て場データ
@@ -725,41 +732,7 @@
       showDetail(feature.properties);
     }
 
-    // エリアリスト構築
-    function buildAreaList(features) {
-      const listEl = document.getElementById('area-list');
-      const filtered = activeFilter === 'all'
-        ? features
-        : features.filter(f => classifyStatus(f.properties['ステータス']) === activeFilter);
-
-      if (filtered.length === 0) {
-        listEl.innerHTML = '<div class="empty-state"><p>該当するエリアがありません</p></div>';
-        return;
-      }
-
-      // 名前順（アルファベット→五十音）
-      filtered.sort((a, b) => {
-        const na = a.properties['名前'] || '';
-        const nb = b.properties['名前'] || '';
-        return na.localeCompare(nb, 'ja');
-      });
-
-      listEl.innerHTML = filtered.map((f, i) => {
-        const p = f.properties;
-        const cls = classifyStatus(p['ステータス']);
-        const cfg = STATUS_CONFIG[cls];
-        const date = p['直近作業予定日'] || '-';
-        const lastSnow = p['最終除雪日'] || '-';
-        const duration = p['指令継続'] || '';
-        return `<div class="area-item" data-index="${i}" onclick="selectArea(${f._globalIndex})">
-          <div>
-            <span class="name">${p['名前']}</span>
-            <div style="font-size:11px;color:#999;margin-top:2px">前回: ${lastSnow}${duration ? ' / 指令: ' + duration : ''}</div>
-          </div>
-          <span class="date" style="color:${cfg.color}">${date}</span>
-        </div>`;
-      }).join('');
-    }
+    // エリアリストはサマリーカードクリックで動的生成（filterByCard内）
 
     // エリアリストからの選択
     window.selectArea = function(globalIndex) {
@@ -782,8 +755,14 @@
       }
     };
 
-    // サマリー表示（工区・路線別、母数付き）
+    // サマリー表示（工区・路線別、母数付き、クリックでフィルター＋一覧表示）
+    let kokuFeaturesGlobal = [];
+    let rosenFeaturesGlobal = [];
+
     function buildSummary(kokuFeatures, rosenFeatures) {
+      kokuFeaturesGlobal = kokuFeatures;
+      rosenFeaturesGlobal = rosenFeatures;
+
       function countByStatus(features) {
         const c = { scheduled: 0, checking: 0, adjusting: 0, other: 0 };
         features.forEach(f => {
@@ -798,52 +777,108 @@
       const kTotal = kokuFeatures.length;
       const rTotal = rosenFeatures.length;
 
-      function summaryRow(label, counts, total) {
+      function summaryRow(type, label, counts, total) {
         const otherCount = total - counts.scheduled - counts.checking - counts.adjusting;
         let html = `<div class="summary-section-title">${label}（全${total}）</div>`;
         html += '<div class="summary-grid">';
-        html += `<div class="summary-item"><div class="count count-scheduled">${counts.scheduled}<span class="total">/${total}</span></div><div class="label">作業予定あり</div></div>`;
-        html += `<div class="summary-item"><div class="count count-checking">${counts.checking}<span class="total">/${total}</span></div><div class="label">現場確認中</div></div>`;
-        html += `<div class="summary-item"><div class="count count-adjusting">${counts.adjusting}<span class="total">/${total}</span></div><div class="label">日程調整中</div></div>`;
+        html += `<div class="summary-item" onclick="filterByCard('${type}','scheduled')"><div class="count count-scheduled">${counts.scheduled}<span class="total">/${total}</span></div><div class="label">作業予定あり</div></div>`;
+        html += `<div class="summary-item" onclick="filterByCard('${type}','checking')"><div class="count count-checking">${counts.checking}<span class="total">/${total}</span></div><div class="label">現場確認中</div></div>`;
+        html += `<div class="summary-item" onclick="filterByCard('${type}','adjusting')"><div class="count count-adjusting">${counts.adjusting}<span class="total">/${total}</span></div><div class="label">日程調整中</div></div>`;
         html += '</div>';
         if (otherCount > 0) {
-          html += `<div style="font-size:11px;color:#999;text-align:right;margin-top:-4px;margin-bottom:8px">その他: ${otherCount}</div>`;
+          html += `<div style="font-size:11px;color:#999;text-align:right;margin-top:-4px;margin-bottom:8px;cursor:pointer" onclick="filterByCard('${type}','other')">その他: ${otherCount} ▶</div>`;
         }
         return html;
       }
 
       document.getElementById('summary').innerHTML =
-        summaryRow('工区', koku, kTotal) + summaryRow('路線', rosen, rTotal);
+        summaryRow('koku', '工区', koku, kTotal) + summaryRow('rosen', '路線', rosen, rTotal);
     }
 
-    // フィルターボタン
-    function buildFilters() {
-      const filters = [
-        { key: 'all', label: 'すべて' },
-        { key: 'scheduled', label: '作業予定あり' },
-        { key: 'checking', label: '現場確認中' },
-        { key: 'adjusting', label: '日程調整中' },
-      ];
-      document.getElementById('filters').innerHTML = filters.map(f =>
-        `<button class="filter-btn ${f.key === activeFilter ? 'active' : ''}" onclick="setFilter('${f.key}')">${f.label}</button>`
-      ).join('');
-    }
+    // カードクリックでフィルター＋一覧表示
+    let activeCardType = null;
+    let activeCardStatus = null;
 
-    window.setFilter = function(key) {
-      activeFilter = key;
-      buildFilters();
-      buildAreaList(allFeatures);
+    window.filterByCard = function(type, status) {
+      // 同じカードを再クリックで閉じる
+      if (activeCardType === type && activeCardStatus === status) {
+        activeCardType = null;
+        activeCardStatus = null;
+        document.getElementById('area-list-section').style.display = 'none';
+        // 全レイヤー表示復帰
+        allLayers.forEach(({ layer, feature }) => {
+          layer.setStyle({ ...styleFeature(feature), opacity: 0.8, fillOpacity: 0.35 });
+        });
+        // active解除
+        document.querySelectorAll('.summary-item.active').forEach(el => el.classList.remove('active'));
+        return;
+      }
 
-      // 地図上のレイヤー表示/非表示
+      activeCardType = type;
+      activeCardStatus = status;
+
+      // active表示更新
+      document.querySelectorAll('.summary-item.active').forEach(el => el.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      // 対象フィーチャー取得
+      const features = type === 'koku' ? kokuFeaturesGlobal : rosenFeaturesGlobal;
+      const filtered = features.filter(f => classifyStatus(f.properties['ステータス']) === status);
+      const typeName = type === 'koku' ? '工区' : '路線';
+      const statusName = STATUS_CONFIG[status]?.label || 'その他';
+
+      // 一覧タイトル更新
+      document.getElementById('area-list-title').textContent = `${typeName} - ${statusName}（${filtered.length}件）`;
+      document.getElementById('area-list-section').style.display = 'block';
+      document.getElementById('area-list-body').style.display = 'block';
+      document.getElementById('area-list-toggle').textContent = '▲ 閉じる';
+
+      // 一覧構築
+      filtered.sort((a, b) => (a.properties['名前'] || '').localeCompare(b.properties['名前'] || '', 'ja'));
+      const listEl = document.getElementById('area-list');
+      listEl.innerHTML = filtered.map(f => {
+        const p = f.properties;
+        const cls = classifyStatus(p['ステータス']);
+        const cfg = STATUS_CONFIG[cls];
+        const date = p['直近作業予定日'] || '-';
+        const lastSnow = p['最終除雪日'] || '-';
+        const duration = p['指令継続'] || '';
+        return `<div class="area-item" onclick="selectArea(${f._globalIndex})">
+          <div>
+            <span class="name">${p['名前']}</span>
+            <div style="font-size:11px;color:#999;margin-top:2px">前回: ${lastSnow}${duration ? ' / 指令: ' + duration : ''}</div>
+          </div>
+          <span class="date" style="color:${cfg.color}">${date}</span>
+        </div>`;
+      }).join('');
+
+      // 一覧位置にスクロール
+      document.getElementById('area-list-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // 地図上の表示を絞る
+      const filteredSet = new Set(filtered.map(f => f._globalIndex));
       allLayers.forEach(({ layer, feature }) => {
-        const cls = classifyStatus(feature.properties['ステータス']);
-        if (key === 'all' || cls === key) {
+        if (filteredSet.has(feature._globalIndex)) {
           layer.setStyle({ ...styleFeature(feature), opacity: 0.8, fillOpacity: 0.35 });
         } else {
           layer.setStyle({ opacity: 0.1, fillOpacity: 0.05, weight: 1 });
         }
       });
     };
+
+    window.toggleAreaList = function() {
+      const body = document.getElementById('area-list-body');
+      const toggle = document.getElementById('area-list-toggle');
+      if (body.style.display === 'none') {
+        body.style.display = 'block';
+        toggle.textContent = '▲ 閉じる';
+      } else {
+        body.style.display = 'none';
+        toggle.textContent = '▼ 開く';
+      }
+    };
+
+    // フィルターは廃止（サマリーカードのクリックに統合）
 
     // 凡例
     const legend = L.control({ position: 'bottomleft' });
@@ -961,8 +996,6 @@
       });
 
       buildSummary(kokuFeatures, rosenFeatures);
-      buildFilters();
-      buildAreaList(combined);
       showUnmatchedPosts();
 
       // 全体表示
