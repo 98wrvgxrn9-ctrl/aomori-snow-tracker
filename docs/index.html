@@ -189,9 +189,9 @@
 
     /* レスポンシブ: スマホ */
     @media (max-width: 768px) {
-      #main { flex-direction: column; height: auto; }
-      #map { height: 50vh; }
-      #panel { width: 100%; height: 50vh; border-left: none; border-top: 1px solid #ddd; }
+      #main { flex-direction: column; height: auto; min-height: 100vh; }
+      #map { height: 50vh; min-height: 300px; width: 100%; order: -1; }
+      #panel { width: 100%; height: auto; min-height: 50vh; border-left: none; border-top: 1px solid #ddd; overflow-y: visible; }
       .summary-grid { grid-template-columns: 1fr 1fr 1fr; }
     }
 
