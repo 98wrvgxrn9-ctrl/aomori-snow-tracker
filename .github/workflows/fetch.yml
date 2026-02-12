@@ -28,6 +28,11 @@ jobs:
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
         run: python scripts/fetch_kml.py
 
+      - name: Notionにデータ同期
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+        run: python scripts/sync_notion.py
+
       - name: 変更をコミット・プッシュ
         run: |
           git config user.name "github-actions[bot]"
