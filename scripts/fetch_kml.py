@@ -23,28 +23,27 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 MAPS = {
     "koku": {
         "name": "工区",
-        "url": "https://www.google.com/maps/d/kml?mid=1Ydi7GSvJ_4zOLatVL_FOUMwoZdTN-_8",
+        "url": "https://www.google.com/maps/d/kml?mid=1mxHDM5k2sxUVybf8m92CTkiGtCAkUKA",
         "name_field": "name",
         "col_name": "工区",
     },
     "rosen": {
         "name": "路線",
-        "url": "https://www.google.com/maps/d/kml?mid=1F5gwcVsyYVRxAz0hVJUid5v2T3e5hA4",
+        "url": "https://www.google.com/maps/d/kml?mid=1I1f6K3ct-wRb3Tk87eXZbwsbe55cVxY",
         "name_field": "description",
         "col_name": "路線",
     },
 }
 
-# ステータスの色コード対応
+# ステータスの色コード対応（フォールバック用）
 STATUS_COLORS = {
-    # 工区用
     "#DB4436": "作業中",
     "#0288D1": "現場確認中",
     "#FFDD5E": "作業予定あり",
-    # 路線用
     "#FF5252": "作業中",
     "#FFD600": "作業予定あり",
-    "#FBC02D": "作業予定あり",  # 別の黄色
+    "#FBC02D": "作業予定あり",
+    "#FFEA00": "作業予定あり",
 }
 
 # 日本時間
@@ -64,6 +63,25 @@ def fetch_kml(url):
     raise ValueError("KMLファイルが見つかりません")
 
 
+def get_extended_data(placemark, ns):
+    """PlacemarkからExtendedDataをdict形式で取得"""
+    ext = {}
+    for data_elem in placemark.findall('kml:ExtendedData/kml:Data', ns):
+        key = data_elem.get('name', '')
+        value_elem = data_elem.find('kml:value', ns)
+        ext[key] = value_elem.text if value_elem is not None and value_elem.text else ""
+    return ext
+
+
+def get_color_from_style(placemark, all_styles, ns):
+    """Placemarkのスタイルから色コードを取得"""
+    style_url_elem = placemark.find('kml:styleUrl', ns)
+    if style_url_elem is not None:
+        style_ref = style_url_elem.text.lstrip('#')
+        return all_styles.get(style_ref, "")
+    return ""
+
+
 def parse_kml(kml_content, name_field="name"):
     """KMLを解析して工区/路線ごとのステータスを抽出"""
     root = ET.fromstring(kml_content)
@@ -71,7 +89,7 @@ def parse_kml(kml_content, name_field="name"):
     # KML名前空間
     ns = {'kml': 'http://www.opengis.net/kml/2.2'}
 
-    # スタイルID→色のマッピングを構築（工区用）
+    # スタイルID→色のマッピングを構築
     style_colors = {}
     for style in root.findall('.//kml:Style', ns):
         style_id = style.get('id', '')
@@ -103,27 +121,49 @@ def parse_kml(kml_content, name_field="name"):
     results = []
     for placemark in root.findall('.//kml:Placemark', ns):
         name_elem = placemark.find('kml:name', ns)
-        desc_elem = placemark.find('kml:description', ns)
-        style_url_elem = placemark.find('kml:styleUrl', ns)
+        ext = get_extended_data(placemark, ns)
 
-        if name_field == "description":
-            # 路線: nameがステータス、descriptionが路線名
-            item_name = desc_elem.text if desc_elem is not None and desc_elem.text else ""
-            status = name_elem.text if name_elem is not None and name_elem.text else "不明"
+        if ext:
+            # 新マップ形式: ExtendedDataから構造化データを取得
+            if name_field == "description":
+                # 路線: nameが路線名、ExtendedDataに作業状況等
+                item_name = name_elem.text if name_elem is not None else ""
+                status = ext.get("作業状況", "不明")
+            else:
+                # 工区: ExtendedDataに工区名等、nameはステータステキスト
+                item_name = ext.get("工区名", "")
+                status = name_elem.text if name_elem is not None else "不明"
+
+            if item_name:
+                row = {
+                    "名前": item_name,
+                    "ステータス": status,
+                }
+                if ext.get("直近作業予定日"):
+                    row["直近作業予定日"] = ext["直近作業予定日"]
+                if ext.get("指令"):
+                    row["指令"] = ext["指令"]
+                if ext.get("更新日時"):
+                    row["更新日時"] = ext["更新日時"]
+                if ext.get("お知らせ"):
+                    row["お知らせ"] = ext["お知らせ"]
+                results.append(row)
         else:
-            # 工区: nameが工区名、色からステータスを取得
-            item_name = name_elem.text if name_elem is not None else ""
-            status = "不明"
-            if style_url_elem is not None:
-                style_ref = style_url_elem.text.lstrip('#')
-                color = all_styles.get(style_ref, "")
+            # 旧マップ形式: フォールバック
+            desc_elem = placemark.find('kml:description', ns)
+            if name_field == "description":
+                item_name = desc_elem.text if desc_elem is not None and desc_elem.text else ""
+                status = name_elem.text if name_elem is not None and name_elem.text else "不明"
+            else:
+                item_name = name_elem.text if name_elem is not None else ""
+                color = get_color_from_style(placemark, all_styles, ns)
                 status = STATUS_COLORS.get(color, f"不明({color})")
 
-        if item_name:
-            results.append({
-                "名前": item_name,
-                "ステータス": status
-            })
+            if item_name:
+                results.append({
+                    "名前": item_name,
+                    "ステータス": status
+                })
 
     return results
 
@@ -132,16 +172,28 @@ def save_to_csv(data, filepath, col_name="工区"):
     """CSVに追記保存"""
     timestamp = datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S")
 
+    has_extended = any("直近作業予定日" in row for row in data)
     file_exists = os.path.exists(filepath)
 
     with open(filepath, 'a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
 
         if not file_exists:
-            writer.writerow(["取得日時", col_name, "ステータス"])
+            header = ["取得日時", col_name, "ステータス"]
+            if has_extended:
+                header += ["直近作業予定日", "指令", "更新日時", "お知らせ"]
+            writer.writerow(header)
 
         for row in data:
-            writer.writerow([timestamp, row["名前"], row["ステータス"]])
+            csv_row = [timestamp, row["名前"], row["ステータス"]]
+            if has_extended:
+                csv_row += [
+                    row.get("直近作業予定日", ""),
+                    row.get("指令", ""),
+                    row.get("更新日時", ""),
+                    row.get("お知らせ", ""),
+                ]
+            writer.writerow(csv_row)
 
     return timestamp
 
