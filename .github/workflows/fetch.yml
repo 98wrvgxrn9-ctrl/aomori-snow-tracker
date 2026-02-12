@@ -51,13 +51,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/ docs/data/
           git diff --staged --quiet || git commit -m "data: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M') の状況を記録"
-          attempt=1
-          while [ $attempt -le 3 ]; do
-            git pull --rebase origin main && git push origin HEAD:main && break
-            if [ $attempt -eq 3 ]; then
-              echo "push failed after 3 attempts"
-              exit 1
-            fi
-            attempt=$((attempt+1))
-            sleep 2
-          done
+          # リモートに新しいコミットがあればマージ（データファイルは常にこちらを優先）
+          git pull origin main --no-rebase -X ours || true
+          git push origin main
