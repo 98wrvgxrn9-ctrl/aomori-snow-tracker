@@ -628,6 +628,7 @@
     let areasMeta = {};   // 工区メタデータ（centroid, bbox, neighbors）
     let dumpSites = [];   // 雪捨て場データ
     let busStatusData = null; // 市営バス運行状況
+    let kokudoFeatures = []; // 国道除雪状況
 
     // スタイル
     function styleFeature(feature) {
@@ -993,6 +994,9 @@
         div.innerHTML += `<div class="legend-item"><span class="legend-color" style="background:${color}"></span>${label}</div>`;
       });
       div.innerHTML += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
+      div.innerHTML += '<div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:10px;color:#888">国道（国交省）</div>';
+      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#ff0000"></span>作業中</div>';
+      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#ff7f2d"></span>除雪済み</div>';
       return div;
     };
     legend.addTo(map);
@@ -1019,6 +1023,14 @@
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { dumpSites = data.sites || []; })
         .catch(err => { console.warn('雪捨て場データ読み込み失敗:', err); dumpSites = []; });
+    }
+
+    // 国道除雪状況データ読み込み
+    function loadKokudoStatus() {
+      return fetch('data/kokudo_status.geojson')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => { kokudoFeatures = data.features || []; })
+        .catch(err => { console.warn('国道除雪状況読み込み失敗:', err); kokudoFeatures = []; });
     }
 
     // 市営バス運行状況データ読み込み
@@ -1095,6 +1107,7 @@
       loadXPosts(),
       loadAreasMeta(),
       loadDumpSites(),
+      loadKokudoStatus(),
       loadBusStatus(),
     ]).then(([kokuFeatures, rosenFeatures]) => {
       const combined = [...kokuFeatures, ...rosenFeatures];
@@ -1154,6 +1167,17 @@
         if (site.notes) popupHtml += `<br>${site.notes}`;
         marker.bindPopup(popupHtml);
         marker.bindTooltip(site.name, { direction: 'top', className: 'dump-tooltip' });
+      });
+
+      // 国道除雪状況レイヤー表示
+      kokudoFeatures.forEach(feature => {
+        const color = feature.properties.color || '#999';
+        const status = feature.properties.status || '';
+        const layer = L.geoJSON(feature, {
+          style: { color: color, weight: 5, opacity: 0.8 },
+        }).addTo(map);
+        layer.bindPopup(`<b>国道区間 #${feature.properties.id}</b><br>状況: ${status}<br><span style="color:#888;font-size:11px">${feature.properties.source}</span>`);
+        layer.bindTooltip(status, { sticky: true, direction: 'top' });
       });
 
       buildSummary(kokuFeatures, rosenFeatures);

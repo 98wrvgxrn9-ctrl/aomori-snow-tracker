@@ -40,6 +40,9 @@ jobs:
       - name: バス運行状況取得
         run: python scripts/fetch_bus_status.py
 
+      - name: 国道除雪状況取得
+        run: python scripts/fetch_kokudo_status.py
+
       - name: Notionにデータ同期
         if: ${{ env.NOTION_API_KEY != '' }}
         run: python scripts/sync_notion.py
