@@ -7,6 +7,9 @@ on:
     - cron: '0 12-21 * * *'
   workflow_dispatch:  # 手動実行用
 
+permissions:
+  contents: write
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
@@ -29,11 +32,13 @@ jobs:
         run: python scripts/fetch_kml.py
 
       - name: Notionにデータ同期
+        if: ${{ secrets.NOTION_API_KEY != '' }}
         env:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
         run: python scripts/sync_notion.py
 
       - name: X自動投稿（差分がある場合のみ）
+        if: ${{ secrets.X_API_KEY != '' && secrets.X_API_SECRET != '' && secrets.X_ACCESS_TOKEN != '' && secrets.X_ACCESS_TOKEN_SECRET != '' }}
         env:
           X_API_KEY: ${{ secrets.X_API_KEY }}
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
