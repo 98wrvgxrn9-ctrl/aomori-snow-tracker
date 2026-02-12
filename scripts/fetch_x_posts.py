@@ -28,7 +28,7 @@ BUDGET_LIMIT = 9.50
 COST_LOG_FILE = "data/x_api_cost.json"
 STATE_FILE = "data/x_api_state.json"
 OUTPUT_FILE = "docs/data/x_posts.json"
-MAX_RESULTS_PER_REQUEST = 50
+MAX_RESULTS_PER_REQUEST = 10
 SEARCH_QUERY = (
     "(青森 OR 青森市) (除雪 OR 排雪 OR 積雪 OR 路面 OR 轍 OR 歩道 OR スタック) "
     "-is:retweet lang:ja"
