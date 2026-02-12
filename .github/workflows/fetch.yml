@@ -13,6 +13,12 @@ permissions:
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    env:
+      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+      X_API_KEY: ${{ secrets.X_API_KEY }}
+      X_API_SECRET: ${{ secrets.X_API_SECRET }}
+      X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+      X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
 
     steps:
       - name: リポジトリをチェックアウト
@@ -32,18 +38,11 @@ jobs:
         run: python scripts/fetch_kml.py
 
       - name: Notionにデータ同期
-        if: ${{ secrets.NOTION_API_KEY != '' }}
-        env:
-          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+        if: ${{ env.NOTION_API_KEY != '' }}
         run: python scripts/sync_notion.py
 
       - name: X自動投稿（差分がある場合のみ）
-        if: ${{ secrets.X_API_KEY != '' && secrets.X_API_SECRET != '' && secrets.X_ACCESS_TOKEN != '' && secrets.X_ACCESS_TOKEN_SECRET != '' }}
-        env:
-          X_API_KEY: ${{ secrets.X_API_KEY }}
-          X_API_SECRET: ${{ secrets.X_API_SECRET }}
-          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
-          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+        if: ${{ env.X_API_KEY != '' && env.X_API_SECRET != '' && env.X_ACCESS_TOKEN != '' && env.X_ACCESS_TOKEN_SECRET != '' }}
         run: python scripts/post_to_x.py
 
       - name: 変更をコミット・プッシュ
