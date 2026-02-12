@@ -501,9 +501,12 @@
   <div id="main">
     <div id="map"></div>
     <div id="panel">
-      <div id="panel-header">
-        <h2>除排雪状況</h2>
-        <p>エリアをクリックすると詳細を表示</p>
+      <div id="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <h2>除排雪状況</h2>
+          <p>エリアをクリックすると詳細を表示</p>
+        </div>
+        <button id="reset-btn" onclick="resetView()" style="background:#1a3a5c;color:#fff;border:none;padding:5px 12px;border-radius:14px;font-size:11px;cursor:pointer;white-space:nowrap">全体表示</button>
       </div>
       <div id="panel-content">
         <div id="summary"></div>
@@ -878,7 +881,38 @@
       }
     };
 
-    // フィルターは廃止（サマリーカードのクリックに統合）
+    // 全体表示に戻す
+    window.resetView = function() {
+      // フィルター解除
+      activeCardType = null;
+      activeCardStatus = null;
+      document.querySelectorAll('.summary-item.active').forEach(el => el.classList.remove('active'));
+      document.getElementById('area-list-section').style.display = 'none';
+
+      // 選択解除
+      if (selectedLayer) {
+        selectedLayer.setStyle(styleFeature(selectedLayer.feature));
+        selectedLayer = null;
+      }
+      document.getElementById('selected-info').innerHTML = '';
+      document.getElementById('x-posts-container').innerHTML = '';
+
+      // 全レイヤー表示復帰
+      allLayers.forEach(({ layer, feature }) => {
+        layer.setStyle(styleFeature(feature));
+      });
+
+      // 地図を全体表示
+      if (allLayers.length > 0) {
+        const group = L.featureGroup(allLayers.map(l => l.layer));
+        if (group.getBounds().isValid()) {
+          map.fitBounds(group.getBounds(), { padding: [20, 20] });
+        }
+      }
+
+      // パネル先頭にスクロール
+      document.getElementById('panel-content').scrollTop = 0;
+    };
 
     // 凡例
     const legend = L.control({ position: 'bottomleft' });
