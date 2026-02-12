@@ -28,6 +28,17 @@
     }
     #header h1 { font-size: 16px; font-weight: bold; }
     #header small { font-size: 11px; opacity: 0.7; }
+    #reload-btn {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 14px;
+      font-size: 11px;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+    #reload-btn:hover { background: rgba(255,255,255,0.25); }
 
     #main { display: flex; height: calc(100vh - 44px); }
     #map { flex: 1; min-width: 0; }
@@ -137,13 +148,25 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
     .summary-item .count {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: bold;
+    }
+    .summary-item .total {
+      font-size: 13px;
+      color: #999;
+      font-weight: normal;
     }
     .summary-item .label {
       font-size: 10px;
       color: #666;
       margin-top: 2px;
+    }
+    .summary-section-title {
+      font-size: 11px;
+      color: #888;
+      font-weight: bold;
+      margin: 8px 0 4px;
+      letter-spacing: 1px;
     }
     .count-scheduled { color: #e74c3c; }
     .count-checking { color: #3498db; }
@@ -418,6 +441,7 @@
     <h1>青森市 除排雪スケジュールマップ</h1>
     <div>
       <small id="update-time"></small>
+      <button id="reload-btn" onclick="location.reload()">更新</button>
       <a class="header-link" href="https://x.com/aomori_snowatch" target="_blank" rel="noopener">@aomori_snowatch</a>
       <span class="header-link" onclick="openModal()">免責事項・利用規約</span>
     </div>
@@ -478,7 +502,7 @@
         <p>エリアをクリックすると詳細を表示</p>
       </div>
       <div id="panel-content">
-        <div id="summary" class="summary-grid"></div>
+        <div id="summary"></div>
         <div id="x-unmatched"></div>
         <div class="filter-bar" id="filters"></div>
         <div id="selected-info"></div>
@@ -758,28 +782,38 @@
       }
     };
 
-    // サマリー表示
-    function buildSummary(features) {
-      const counts = { scheduled: 0, checking: 0, adjusting: 0 };
-      features.forEach(f => {
-        const cls = classifyStatus(f.properties['ステータス']);
-        if (counts[cls] !== undefined) counts[cls]++;
-      });
+    // サマリー表示（工区・路線別、母数付き）
+    function buildSummary(kokuFeatures, rosenFeatures) {
+      function countByStatus(features) {
+        const c = { scheduled: 0, checking: 0, adjusting: 0, other: 0 };
+        features.forEach(f => {
+          const cls = classifyStatus(f.properties['ステータス']);
+          c[cls] = (c[cls] || 0) + 1;
+        });
+        return c;
+      }
 
-      document.getElementById('summary').innerHTML = `
-        <div class="summary-item">
-          <div class="count count-scheduled">${counts.scheduled}</div>
-          <div class="label">作業予定あり</div>
-        </div>
-        <div class="summary-item">
-          <div class="count count-checking">${counts.checking}</div>
-          <div class="label">現場確認中</div>
-        </div>
-        <div class="summary-item">
-          <div class="count count-adjusting">${counts.adjusting}</div>
-          <div class="label">日程調整中</div>
-        </div>
-      `;
+      const koku = countByStatus(kokuFeatures);
+      const rosen = countByStatus(rosenFeatures);
+      const kTotal = kokuFeatures.length;
+      const rTotal = rosenFeatures.length;
+
+      function summaryRow(label, counts, total) {
+        const otherCount = total - counts.scheduled - counts.checking - counts.adjusting;
+        let html = `<div class="summary-section-title">${label}（全${total}）</div>`;
+        html += '<div class="summary-grid">';
+        html += `<div class="summary-item"><div class="count count-scheduled">${counts.scheduled}<span class="total">/${total}</span></div><div class="label">作業予定あり</div></div>`;
+        html += `<div class="summary-item"><div class="count count-checking">${counts.checking}<span class="total">/${total}</span></div><div class="label">現場確認中</div></div>`;
+        html += `<div class="summary-item"><div class="count count-adjusting">${counts.adjusting}<span class="total">/${total}</span></div><div class="label">日程調整中</div></div>`;
+        html += '</div>';
+        if (otherCount > 0) {
+          html += `<div style="font-size:11px;color:#999;text-align:right;margin-top:-4px;margin-bottom:8px">その他: ${otherCount}</div>`;
+        }
+        return html;
+      }
+
+      document.getElementById('summary').innerHTML =
+        summaryRow('工区', koku, kTotal) + summaryRow('路線', rosen, rTotal);
     }
 
     // フィルターボタン
@@ -926,7 +960,7 @@
         marker.bindTooltip(site.name, { direction: 'top', className: 'dump-tooltip' });
       });
 
-      buildSummary(combined);
+      buildSummary(kokuFeatures, rosenFeatures);
       buildFilters();
       buildAreaList(combined);
       showUnmatchedPosts();
