@@ -298,6 +298,60 @@
       text-align: center;
       padding: 12px;
     }
+    .bus-section {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .bus-section h4 {
+      font-size: 14px;
+      color: #1a3a5c;
+      margin-bottom: 8px;
+    }
+    .bus-meta {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    .bus-badge {
+      display: inline-block;
+      background: #f59e0b;
+      color: #fff;
+      border-radius: 10px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 6px;
+    }
+    .bus-list {
+      margin-top: 6px;
+      border-top: 1px solid #f0f0f0;
+      padding-top: 8px;
+    }
+    .bus-list-title {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+    .bus-item {
+      font-size: 12px;
+      color: #333;
+      line-height: 1.6;
+      margin-bottom: 4px;
+    }
+    .bus-item .route {
+      font-weight: bold;
+      color: #1f2937;
+    }
+    .bus-note {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+      line-height: 1.5;
+    }
 
     /* 工区ラベル */
     .area-label {
@@ -520,6 +574,7 @@
       </div>
       <div id="panel-content">
         <div id="summary"></div>
+        <div id="bus-status"></div>
         <div id="x-unmatched"></div>
         <div id="selected-info"></div>
         <div id="x-posts-container"></div>
@@ -572,6 +627,7 @@
     let xPostsData = [];  // X投稿データ
     let areasMeta = {};   // 工区メタデータ（centroid, bbox, neighbors）
     let dumpSites = [];   // 雪捨て場データ
+    let busStatusData = null; // 市営バス運行状況
 
     // スタイル
     function styleFeature(feature) {
@@ -965,6 +1021,66 @@
         .catch(err => { console.warn('雪捨て場データ読み込み失敗:', err); dumpSites = []; });
     }
 
+    // 市営バス運行状況データ読み込み
+    function loadBusStatus() {
+      return fetch('data/bus_status.json')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => { busStatusData = data || null; })
+        .catch(err => { console.warn('バス運行状況データ読み込み失敗:', err); busStatusData = null; });
+    }
+
+    function renderBusList(title, items, withType) {
+      if (!items || items.length === 0) return '';
+      let html = '<div class="bus-list">';
+      html += `<div class="bus-list-title">${title}</div>`;
+      items.forEach(item => {
+        html += '<div class="bus-item">';
+        html += `<span class="route">${item.route || ''}</span>`;
+        if (withType && item.type) html += `（${item.type}）`;
+        if (item.detail) html += `: ${item.detail}`;
+        html += '</div>';
+      });
+      html += '</div>';
+      return html;
+    }
+
+    function showBusStatus() {
+      const container = document.getElementById('bus-status');
+      if (!busStatusData) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let html = '<div class="bus-section">';
+      html += '<h4>青森市営バス運行状況</h4>';
+      html += `<div class="bus-meta">最終更新: ${busStatusData.updated_at || '-'}</div>`;
+      if (busStatusData.next_update_notice) {
+        const prep = busStatusData.next_update_notice;
+        html += '<div class="bus-note">';
+        html += `${prep.date || ''} <span class="bus-badge">${prep.status || ''}</span><br>`;
+        html += `${prep.message || ''}`;
+        html += '</div>';
+      }
+
+      html += renderBusList('新着情報', busStatusData.new_info, true);
+      html += renderBusList('運休解除（通常運行）', busStatusData.resumed, false);
+      html += renderBusList('運休・迂回継続', busStatusData.continuing, true);
+
+      if (busStatusData.notes && busStatusData.notes.length > 0) {
+        html += '<div class="bus-list"><div class="bus-list-title">備考</div>';
+        busStatusData.notes.forEach(n => { html += `<div class="bus-note">・${n}</div>`; });
+        html += '</div>';
+      }
+      if (busStatusData.contacts && busStatusData.contacts.length > 0) {
+        html += '<div class="bus-list"><div class="bus-list-title">問い合わせ</div>';
+        busStatusData.contacts.forEach(c => { html += `<div class="bus-note">${c.name}: ${c.tel}</div>`; });
+        html += '</div>';
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
     // 工区メタデータ読み込み
     function loadAreasMeta() {
       return fetch('data/areas_meta.json')
@@ -979,6 +1095,7 @@
       loadXPosts(),
       loadAreasMeta(),
       loadDumpSites(),
+      loadBusStatus(),
     ]).then(([kokuFeatures, rosenFeatures]) => {
       const combined = [...kokuFeatures, ...rosenFeatures];
       allFeatures = combined;
@@ -1040,6 +1157,7 @@
       });
 
       buildSummary(kokuFeatures, rosenFeatures);
+      showBusStatus();
       showUnmatchedPosts();
 
       // 全体表示
