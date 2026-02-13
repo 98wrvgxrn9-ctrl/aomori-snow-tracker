@@ -519,6 +519,7 @@
       <a class="header-link" href="https://x.com/aomori_snowatch" target="_blank" rel="noopener">@aomori_snowatch</a>
       <span class="header-link" onclick="openModal()">免責事項・利用規約</span>
     </div>
+    <div style="font-size:10px;opacity:0.6;width:100%;margin-top:2px">市民の体感情報を統計化し傾向を示す観測ツールです。行政の評価・採点を目的としません。</div>
   </div>
 
   <!-- 免責事項・利用規約モーダル -->
@@ -527,7 +528,7 @@
       <h2>本サービスについて</h2>
 
       <h3>1. 目的と位置づけ</h3>
-      <p>本サービス「青森除雪ウォッチ」は、青森市が公開している除排雪に関するオープンデータや、SNS上の市民の声を集約し、地図上でわかりやすく表示することを目的とした市民プロジェクトです。</p>
+      <p>本サービス「青森除雪ウォッチ」は、青森市が公開している除排雪に関するオープンデータや、SNS上の市民体感を統計化し、地図上で傾向を可視化することを目的とした市民プロジェクトです。行政の評価・採点を目的とするものではありません。</p>
       <p>青森市の除排雪事業を応援し、市民と行政の相互理解を促進するための<strong>補完的な情報ツール</strong>として運営しています。行政の公式サービスの代替を意図するものではありません。</p>
 
       <h3>2. 行政機関の皆さまへ</h3>
@@ -559,16 +560,16 @@
 
       <h3>6. SNS投稿の取り扱い</h3>
       <ul>
-        <li>X（旧Twitter）の投稿は、X社のAPI利用規約に基づき取得・表示しています。</li>
-        <li>ご自身の投稿の掲載を希望されない場合は、運営者までご連絡ください。速やかに対応いたします。</li>
-        <li>元の投稿が削除された場合、本サービスからも削除されます。</li>
+        <li>SNS上の公開投稿を収集・分析していますが、原文の公開は行いません。</li>
+        <li>投稿内容は統計化・匿名化した上で、トピック構成や傾向のみを表示しています。</li>
+        <li>個人が特定される情報は一切表示しません。</li>
       </ul>
 
       <h3>7. データソース</h3>
       <ul>
         <li>除排雪スケジュール: 青森市が公開するオープンデータ</li>
         <li>地図タイル: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</li>
-        <li>市民の声: X（旧Twitter）上の公開投稿</li>
+        <li>市民体感: SNS公開投稿の統計化データ（原文非公開）</li>
         <li>雪捨て場: 青森市公開情報</li>
       </ul>
 
@@ -730,24 +731,7 @@
       document.getElementById('selected-info').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // X投稿の1件分のHTML
-    function renderXPost(post) {
-      let html = '<div class="x-post">';
-      html += `<div class="x-author">${post.author || ''}`;
-      if (post.area) html += ` <span style="color:#aaa;font-size:11px">📍${post.area}</span>`;
-      html += '</div>';
-      html += `<div class="x-text">${post.text || ''}</div>`;
-      html += '<div class="x-meta">';
-      html += `<span>${post.posted_at || ''}</span>`;
-      if (post.url) {
-        html += `<a class="x-link" href="${post.url}" target="_blank" rel="noopener">投稿を見る</a>`;
-      }
-      html += '</div>';
-      html += '</div>';
-      return html;
-    }
-
-    // エリアに紐づくX投稿を表示（隣接工区も含む）
+    // X投稿の集計表示（原文は非公開）
     function showXPosts(areaName) {
       const container = document.getElementById('x-posts-container');
       if (!areaName || xPostsData.length === 0) {
@@ -762,47 +746,82 @@
         meta.neighbors.forEach(n => relatedAreas.add(n));
       }
 
-      const directPosts = xPostsData.filter(p => p.area === areaName);
-      const neighborPosts = xPostsData.filter(p => p.area !== areaName && relatedAreas.has(p.area));
+      const posts = xPostsData.filter(p => relatedAreas.has(p.area));
+      if (posts.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      // トピック分類（キーワードベース）
+      const topics = { '通行困難': 0, '歩道・通学路': 0, '排雪要望': 0, '改善報告': 0, 'その他': 0 };
+      posts.forEach(p => {
+        const t = (p.text || '').toLowerCase();
+        if (/すれ違|通れ|狭|スタック|出せ/.test(t)) topics['通行困難']++;
+        else if (/歩道|通学|歩く|歩行/.test(t)) topics['歩道・通学路']++;
+        else if (/排雪|雪捨|除雪.*来な|入って/.test(t)) topics['排雪要望']++;
+        else if (/きれい|感謝|ありがと|解消|入りました/.test(t)) topics['改善報告']++;
+        else topics['その他']++;
+      });
 
       let html = '<div class="x-posts-section">';
-      html += '<h4><span class="x-logo">&#120143;</span> 市民の声</h4>';
-
-      if (directPosts.length === 0 && neighborPosts.length === 0) {
-        html += '<div class="x-no-posts">この工区・近隣の投稿はまだありません</div>';
-      } else {
-        directPosts.forEach(post => { html += renderXPost(post); });
-        if (neighborPosts.length > 0) {
-          html += '<div style="font-size:11px;color:#999;margin:8px 0 4px;border-top:1px solid #eee;padding-top:6px">近隣エリアの投稿</div>';
-          neighborPosts.forEach(post => { html += renderXPost(post); });
-        }
-      }
+      html += `<h4>周辺の市民体感（${posts.length}件の投稿を集計）</h4>`;
+      html += '<div style="font-size:11px;color:#888;margin-bottom:6px">※原文は非公開・統計のみ表示</div>';
+      Object.entries(topics).forEach(([topic, count]) => {
+        if (count === 0) return;
+        const pct = Math.round(count / posts.length * 100);
+        const barWidth = Math.max(pct, 5);
+        const color = topic === '改善報告' ? '#27ae60' : topic === '通行困難' ? '#e74c3c' : topic === '歩道・通学路' ? '#e67e22' : topic === '排雪要望' ? '#3498db' : '#999';
+        html += `<div style="margin-bottom:4px;font-size:12px">`;
+        html += `<span style="display:inline-block;width:80px">${topic}</span>`;
+        html += `<span style="display:inline-block;width:${barWidth}%;max-width:60%;height:12px;background:${color};border-radius:3px;vertical-align:middle;margin-right:4px"></span>`;
+        html += `<span style="color:#666">${count}件</span>`;
+        html += `</div>`;
+      });
       html += '</div>';
       container.innerHTML = html;
     }
 
-    // 全エリアの工区名セットを作る（未分類判定用）
-    function getKnownAreas() {
-      return new Set(allFeatures.map(f => f.properties['名前']));
-    }
-
-    // 未分類の投稿を折りたたみ式で常時表示
+    // 全体の市民体感サマリー（折りたたみ）
     function showUnmatchedPosts() {
       const container = document.getElementById('x-unmatched');
       if (xPostsData.length === 0) { container.innerHTML = ''; return; }
 
-      const known = getKnownAreas();
-      const unmatched = xPostsData.filter(p => !known.has(p.area));
-
-      if (unmatched.length === 0) { container.innerHTML = ''; return; }
+      const total = xPostsData.length;
+      const withArea = xPostsData.filter(p => p.area && p.area.length > 0).length;
 
       let html = '<div class="x-posts-section">';
       html += '<div class="collapsible-header" onclick="toggleUnmatched()">';
-      html += `<h4 style="margin:0"><span class="x-logo">&#120143;</span> 最新の声 (${unmatched.length}件)</h4>`;
+      html += `<h4 style="margin:0">市民体感サマリー（${total}件）</h4>`;
       html += '<span class="toggle" id="unmatched-toggle">▼ 開く</span>';
       html += '</div>';
       html += '<div class="collapsible-body collapsed" id="unmatched-body">';
-      unmatched.forEach(post => { html += renderXPost(post); });
+      html += `<div style="font-size:12px;color:#555;margin-bottom:8px">収集した${total}件のSNS投稿を統計化しています。原文は公開していません。</div>`;
+
+      // 全体トピック集計
+      const topics = { '通行困難': 0, '歩道・通学路': 0, '排雪要望': 0, '改善報告': 0, '情報共有': 0 };
+      xPostsData.forEach(p => {
+        const t = (p.text || '').toLowerCase();
+        if (/すれ違|通れ|狭|スタック|出せ/.test(t)) topics['通行困難']++;
+        else if (/歩道|通学|歩く|歩行/.test(t)) topics['歩道・通学路']++;
+        else if (/排雪|雪捨|除雪.*来な|入って/.test(t)) topics['排雪要望']++;
+        else if (/きれい|感謝|ありがと|解消|入りました/.test(t)) topics['改善報告']++;
+        else topics['情報共有']++;
+      });
+
+      html += '<div style="font-size:11px;font-weight:bold;color:#1a3a5c;margin-bottom:4px">トピック構成</div>';
+      Object.entries(topics).forEach(([topic, count]) => {
+        if (count === 0) return;
+        const pct = Math.round(count / total * 100);
+        const barWidth = Math.max(pct, 5);
+        const color = topic === '改善報告' ? '#27ae60' : topic === '通行困難' ? '#e74c3c' : topic === '歩道・通学路' ? '#e67e22' : topic === '排雪要望' ? '#3498db' : '#999';
+        html += `<div style="margin-bottom:3px;font-size:11px">`;
+        html += `<span style="display:inline-block;width:75px">${topic}</span>`;
+        html += `<span style="display:inline-block;width:${barWidth}%;max-width:55%;height:10px;background:${color};border-radius:2px;vertical-align:middle;margin-right:4px"></span>`;
+        html += `<span style="color:#888">${pct}%</span>`;
+        html += `</div>`;
+      });
+
+      html += `<div style="font-size:11px;color:#aaa;margin-top:6px">エリア特定率: ${Math.round(withArea / total * 100)}%（${withArea}/${total}件）</div>`;
       html += '</div></div>';
       container.innerHTML = html;
     }
