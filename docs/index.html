@@ -593,6 +593,7 @@
         <div id="summary"></div>
         <div id="bus-status"></div>
         <div id="x-unmatched"></div>
+        <div id="fms-risk-panel"></div>
         <div id="selected-info"></div>
         <div id="x-posts-container"></div>
         <div id="area-list-section" style="display:none">
@@ -1157,6 +1158,60 @@
         .catch(err => { console.warn('国道除雪状況読み込み失敗:', err); kokudoFeatures = []; });
     }
 
+    // FMSリスクパネル表示
+    function showFmsRiskPanel() {
+      const container = document.getElementById('fms-risk-panel');
+      const areas = Object.entries(fmsRisk).filter(([, d]) => d.total > 0);
+      if (areas.length === 0) { container.innerHTML = ''; return; }
+
+      // スタック報告ありを上に、次に件数順
+      areas.sort((a, b) => (b[1].stuck_total - a[1].stuck_total) || (b[1].total - a[1].total));
+
+      const stuckAreas = areas.filter(([, d]) => d.stuck_total > 0);
+      const totalReports = areas.reduce((s, [, d]) => s + d.total, 0);
+
+      let html = '<div class="bus-section">';
+      html += `<h4 style="cursor:pointer;user-select:none" onclick="document.getElementById('fms-risk-detail').style.display=document.getElementById('fms-risk-detail').style.display==='none'?'block':'none'">`;
+      html += `市民報告（${areas.length}エリア・${totalReports}件）`;
+      if (stuckAreas.length > 0) {
+        html += ` <span style="background:#c0392b;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px">⚠${stuckAreas.length}</span>`;
+      }
+      html += ' <span style="font-size:11px;color:#888">▶</span></h4>';
+      html += '<div style="font-size:10px;color:#aaa;margin-bottom:4px">除雪後からの期間内の報告を集計</div>';
+      html += '<div id="fms-risk-detail" style="display:none">';
+
+      areas.forEach(([name, data]) => {
+        const hasStuck = data.stuck_total > 0;
+        const borderColor = hasStuck ? '#c0392b' : '#e5e7eb';
+        html += `<div style="border:1px solid ${borderColor};border-radius:6px;padding:8px;margin-bottom:6px;${hasStuck ? 'background:#fef2f2' : ''}">`;
+        html += `<div style="font-size:12px;font-weight:bold;color:#1a3a5c;margin-bottom:3px">${name}`;
+        html += `<span style="font-size:10px;color:#888;font-weight:normal;margin-left:6px">除雪後${data.days_since_snow}日</span>`;
+        html += '</div>';
+
+        // リスクバー（コンパクト）
+        const riskItems = [
+          ['スタック', data.risk.stacked, '#c0392b'],
+          ['走行注意', data.risk.near_stack, '#e67e22'],
+          ['通行困難', data.risk.passable_slow, '#f39c12'],
+          ['改善', data.risk.resolved, '#27ae60'],
+        ];
+        riskItems.forEach(([label, count, color]) => {
+          if (count === 0) return;
+          html += `<div style="font-size:10px;margin-bottom:1px">`;
+          html += `<span style="display:inline-block;width:55px;color:#666">${label}</span>`;
+          const barW = Math.min(Math.max(count * 10, 8), 60);
+          html += `<span style="display:inline-block;width:${barW}px;height:8px;background:${color};border-radius:2px;vertical-align:middle;margin-right:3px"></span>`;
+          html += `<span style="color:#888">${count}</span>`;
+          html += '</div>';
+        });
+
+        html += '</div>';
+      });
+
+      html += '</div></div>';
+      container.innerHTML = html;
+    }
+
     // 市営バス運行状況データ読み込み
     function loadBusStatus() {
       return fetch('data/bus_status.json')
@@ -1324,6 +1379,7 @@
       buildSummary(kokuFeatures, rosenFeatures);
       showBusStatus();
       showUnmatchedPosts();
+      showFmsRiskPanel();
 
       // 全体表示
       if (allLayers.length > 0) {
