@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""FMS投稿を指令継続期間に応じて集計し、工区ごとの通行リスクを生成する"""
+"""FMS投稿を直近7日間で集計し、工区・路線ごとの通行リスクを生成する"""
 
 import csv
 import json
+import math
 import os
 import re
 from datetime import datetime, timedelta
@@ -10,7 +11,10 @@ from datetime import datetime, timedelta
 FMS_CSV = os.path.join(os.path.dirname(__file__), "..", "fms-data", "data", "analysis",
                        "fms_aomori_perfect_with_koku_merged_v2_latest.csv")
 KOKU_GEOJSON = os.path.join(os.path.dirname(__file__), "..", "docs", "data", "koku.geojson")
+ROSEN_GEOJSON = os.path.join(os.path.dirname(__file__), "..", "docs", "data", "rosen.geojson")
 OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "docs", "data", "fms_risk.json")
+
+PERIOD_DAYS = 7  # 直近7日間を集計
 
 # スタック危険度タグ（フロントエンドと同じ分類）
 RISK_PATTERNS = [
@@ -19,6 +23,9 @@ RISK_PATTERNS = [
     ("passable_slow", re.compile(r"すれ違|狭|通れ|歩道|通学|歩け|歩行|1車線|一車線")),
     ("resolved",      re.compile(r"きれい|感謝|ありがと|解消|入りました|除雪.*入っ|アスファルト.*見え")),
 ]
+
+# 路線マッチングの最大距離（km）
+ROSEN_MATCH_DISTANCE_KM = 0.3
 
 
 def classify_risk(text):
@@ -41,104 +48,203 @@ def parse_last_snow_date(date_str, year=2026):
         return None
 
 
+def haversine_km(lat1, lon1, lat2, lon2):
+    """2点間の距離（km）"""
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def point_to_line_min_distance(plat, plng, coords):
+    """点からLineStringの各頂点への最短距離（km）。簡易版。"""
+    min_d = float("inf")
+    for c in coords:
+        d = haversine_km(plat, plng, c[1], c[0])  # GeoJSON: [lng, lat]
+        if d < min_d:
+            min_d = d
+    return min_d
+
+
+def aggregate_risk(posts):
+    """投稿リストからリスク集計を返す"""
+    risk_counts = {"stacked": 0, "near_stack": 0, "passable_slow": 0, "resolved": 0, "info": 0}
+    for row in posts:
+        text = (row.get("title", "") + " " + row.get("description", "")).strip()
+        tag = classify_risk(text)
+        risk_counts[tag] += 1
+    stuck_total = risk_counts["stacked"] + risk_counts["near_stack"]
+    return risk_counts, stuck_total
+
+
 def main():
-    # 工区GeoJSONから最終除雪日を取得
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    period_start = today - timedelta(days=PERIOD_DAYS)
+
+    # --- 工区GeoJSON ---
     with open(KOKU_GEOJSON, encoding="utf-8") as f:
         koku_data = json.load(f)
 
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
-    koku_periods = {}  # 工区名 → (period_start, days_since)
+    koku_info = {}
     for feat in koku_data["features"]:
         props = feat["properties"]
         name = props.get("名前", "")
         last_snow = parse_last_snow_date(props.get("最終除雪日", ""))
-        shirei = props.get("指令", "")
-
-        if last_snow:
-            days_since = (today - last_snow).days
-            period_start = last_snow
-        else:
-            # 最終除雪日不明の場合、30日前をデフォルトに
-            days_since = 30
-            period_start = today - timedelta(days=30)
-
-        koku_periods[name] = {
-            "period_start": period_start,
-            "days_since": days_since,
-            "shirei": shirei,
+        days_since = (today - last_snow).days if last_snow else None
+        koku_info[name] = {
+            "shirei": props.get("指令", ""),
+            "days_since_snow": days_since,
+            "last_snow_date": props.get("最終除雪日", ""),
         }
 
-    # FMS投稿を読み込み
+    # --- 路線GeoJSON ---
+    with open(ROSEN_GEOJSON, encoding="utf-8") as f:
+        rosen_data = json.load(f)
+
+    # 路線名 → 座標リスト（重複名は座標を結合）
+    rosen_coords = {}
+    rosen_info = {}
+    for feat in rosen_data["features"]:
+        props = feat["properties"]
+        name = props.get("名前", "")
+        coords = feat["geometry"].get("coordinates", [])
+        if name not in rosen_coords:
+            rosen_coords[name] = []
+            last_snow = parse_last_snow_date(props.get("最終除雪日", ""))
+            days_since = (today - last_snow).days if last_snow else None
+            rosen_info[name] = {
+                "shirei": props.get("指令", ""),
+                "days_since_snow": days_since,
+                "last_snow_date": props.get("最終除雪日", ""),
+            }
+        rosen_coords[name].extend(coords)
+
+    # --- FMS投稿読み込み（直近7日間のみ） ---
     with open(FMS_CSV, encoding="utf-8-sig") as f:
         fms_rows = list(csv.DictReader(f))
 
-    print(f"FMS全投稿: {len(fms_rows)}件")
-    print(f"工区数: {len(koku_periods)}")
-
-    # 工区ごとに期間内のFMS投稿を集計
-    result = {}
-    total_matched = 0
-
-    for koku_name, period_info in koku_periods.items():
-        period_start = period_info["period_start"]
-        days = period_info["days_since"]
-
-        # この工区にマッチするFMS投稿を期間フィルタ
-        matched_posts = []
-        for row in fms_rows:
-            if row.get("matched_koku") != koku_name:
-                continue
-            pub_date_str = row.get("pub_date", "")[:10]
-            try:
-                pub_date = datetime.strptime(pub_date_str, "%Y-%m-%d")
-            except ValueError:
-                continue
-            if pub_date >= period_start:
-                matched_posts.append(row)
-
-        if not matched_posts:
+    recent_posts = []
+    for row in fms_rows:
+        pub_date_str = row.get("pub_date", "")[:10]
+        try:
+            pub_date = datetime.strptime(pub_date_str, "%Y-%m-%d")
+        except ValueError:
             continue
+        if pub_date >= period_start:
+            recent_posts.append(row)
 
-        total_matched += len(matched_posts)
+    print(f"FMS全投稿: {len(fms_rows)}件")
+    print(f"直近{PERIOD_DAYS}日間: {len(recent_posts)}件")
+    print(f"工区数: {len(koku_info)}, 路線数: {len(rosen_coords)}")
 
-        # リスク分類
-        risk_counts = {"stacked": 0, "near_stack": 0, "passable_slow": 0, "resolved": 0, "info": 0}
-        for row in matched_posts:
-            text = (row.get("title", "") + " " + row.get("description", "")).strip()
-            tag = classify_risk(text)
-            risk_counts[tag] += 1
+    # --- 工区集計 ---
+    koku_posts = {}  # 工区名 → [posts]
+    unmatched_koku_posts = []  # 工区にマッチしなかった投稿
 
-        stuck_total = risk_counts["stacked"] + risk_counts["near_stack"]
+    for row in recent_posts:
+        koku_name = row.get("matched_koku", "").strip()
+        if koku_name and koku_name in koku_info:
+            koku_posts.setdefault(koku_name, []).append(row)
+        else:
+            unmatched_koku_posts.append(row)
 
-        result[koku_name] = {
-            "total": len(matched_posts),
-            "days_since_snow": days,
-            "shirei": period_info["shirei"],
+    koku_result = {}
+    for name, posts in koku_posts.items():
+        risk_counts, stuck_total = aggregate_risk(posts)
+        info = koku_info[name]
+        koku_result[name] = {
+            "category": "koku",
+            "total": len(posts),
+            "days_since_snow": info["days_since_snow"],
+            "last_snow_date": info["last_snow_date"],
+            "shirei": info["shirei"],
             "risk": risk_counts,
             "stuck_total": stuck_total,
             "resolved": risk_counts["resolved"],
         }
 
-    print(f"期間内マッチ投稿: {total_matched}件")
-    print(f"リスクデータ生成: {len(result)}工区")
+    print(f"工区マッチ: {len(koku_result)}工区, {sum(d['total'] for d in koku_result.values())}件")
 
-    # 上位を表示
-    top = sorted(result.items(), key=lambda x: x[1]["stuck_total"], reverse=True)[:10]
-    print("\nスタック報告上位:")
+    # --- 路線マッチ（工区にマッチしなかった投稿を路線に近接マッチ） ---
+    rosen_posts = {}  # 路線名 → [posts]
+    still_unmatched = []
+
+    for row in unmatched_koku_posts:
+        try:
+            plat = float(row.get("latitude", 0))
+            plng = float(row.get("longitude", 0))
+        except (ValueError, TypeError):
+            still_unmatched.append(row)
+            continue
+
+        if plat == 0 or plng == 0:
+            still_unmatched.append(row)
+            continue
+
+        best_rosen = None
+        best_dist = ROSEN_MATCH_DISTANCE_KM
+
+        for rname, coords in rosen_coords.items():
+            d = point_to_line_min_distance(plat, plng, coords)
+            if d < best_dist:
+                best_dist = d
+                best_rosen = rname
+
+        if best_rosen:
+            rosen_posts.setdefault(best_rosen, []).append(row)
+        else:
+            still_unmatched.append(row)
+
+    rosen_result = {}
+    for name, posts in rosen_posts.items():
+        risk_counts, stuck_total = aggregate_risk(posts)
+        info = rosen_info[name]
+        rosen_result[name] = {
+            "category": "rosen",
+            "total": len(posts),
+            "days_since_snow": info["days_since_snow"],
+            "last_snow_date": info["last_snow_date"],
+            "shirei": info["shirei"],
+            "risk": risk_counts,
+            "stuck_total": stuck_total,
+            "resolved": risk_counts["resolved"],
+        }
+
+    print(f"路線マッチ: {len(rosen_result)}路線, {sum(d['total'] for d in rosen_result.values())}件")
+    print(f"未マッチ: {len(still_unmatched)}件")
+
+    # --- 結合（工区優先、次に路線） ---
+    all_areas = {}
+    all_areas.update(koku_result)
+    all_areas.update(rosen_result)
+
+    # 上位表示
+    top = sorted(all_areas.items(), key=lambda x: (x[1]["stuck_total"], x[1]["total"]), reverse=True)[:15]
+    print(f"\nリスク上位:")
     for name, data in top:
-        print(f"  {name}: スタック{data['stuck_total']}件 / 全{data['total']}件 (最終除雪{data['days_since_snow']}日前)")
+        cat = "工区" if data["category"] == "koku" else "路線"
+        snow = f"除雪{data['days_since_snow']}日前" if data["days_since_snow"] is not None else "除雪日不明"
+        print(f"  [{cat}] {name}: スタック{data['stuck_total']}件 / 全{data['total']}件 ({snow})")
 
-    # JSON出力
+    # --- JSON出力 ---
     output = {
         "generated": today.strftime("%Y-%m-%d"),
-        "areas": result,
+        "period_days": PERIOD_DAYS,
+        "summary": {
+            "koku_count": len(koku_result),
+            "rosen_count": len(rosen_result),
+            "total_posts": sum(d["total"] for d in all_areas.values()),
+            "unmatched_posts": len(still_unmatched),
+        },
+        "areas": all_areas,
     }
 
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False)
     print(f"\n保存: {OUT_PATH}")
+    print(f"合計: {len(all_areas)}エリア（工区{len(koku_result)} + 路線{len(rosen_result)}）")
 
 
 if __name__ == "__main__":

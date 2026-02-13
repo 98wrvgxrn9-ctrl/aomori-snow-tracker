@@ -689,6 +689,58 @@
       margin-left: 12px;
     }
     #header .header-link:hover { color: #fff; }
+
+    /* 特徴モーダル */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .feature-card {
+      background: linear-gradient(135deg, #f0f7ff, #ffffff);
+      border: 1px solid #d8e8fb;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .feature-card h4 {
+      font-size: 13px;
+      color: #1a3a5c;
+      margin-bottom: 4px;
+    }
+    .feature-card p {
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.6;
+    }
+    .video-box {
+      margin-top: 14px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+    }
+    .video-box h4 {
+      font-size: 13px;
+      color: #1a3a5c;
+      margin-bottom: 8px;
+    }
+    .video-empty {
+      font-size: 12px;
+      color: #888;
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .video-embed {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: none;
+      border-radius: 8px;
+    }
+    @media (max-width: 768px) {
+      .feature-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -698,9 +750,41 @@
       <small id="update-time"></small>
       <button id="reload-btn" onclick="location.reload()">更新</button>
       <a class="header-link" href="https://x.com/aomori_snowatch" target="_blank" rel="noopener">@aomori_snowatch</a>
+      <span class="header-link" onclick="openFeatureModal()">このマップの特徴</span>
       <span class="header-link" onclick="openModal()">免責事項・利用規約</span>
     </div>
     <div style="font-size:10px;opacity:0.6;width:100%;margin-top:2px">市民の体感情報を統計化し傾向を示す観測ツールです。行政の評価・採点を目的としません。</div>
+  </div>
+
+  <!-- 特徴モーダル -->
+  <div class="modal-overlay" id="feature-modal" onclick="closeFeatureModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <h2>このマップの特徴</h2>
+      <p>本マップは、行政公開情報を土台にしながら、市民側の体感を統計として重ねて見られるよう設計しています。</p>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>公式情報と市民体感の重ね合わせ</h4>
+          <p>除排雪スケジュールと市民投稿を同じ地図上で比較できます。</p>
+        </div>
+        <div class="feature-card">
+          <h4>原文ではなく集計表示</h4>
+          <p>投稿の原文公開ではなく、通行リスク傾向へ変換して表示します。</p>
+        </div>
+        <div class="feature-card">
+          <h4>指令期間に連動した分析</h4>
+          <p>指令継続期間に合わせて集計し、期間リセット時に指標も更新します。</p>
+        </div>
+        <div class="feature-card">
+          <h4>行動に必要な生活情報</h4>
+          <p>雪捨て場・市営バス運行状況など移動判断に直結する情報も扱います。</p>
+        </div>
+      </div>
+      <div class="video-box">
+        <h4>紹介動画</h4>
+        <div id="feature-video-container" class="video-empty">動画URLを設定すると、ここに埋め込み表示されます。</div>
+      </div>
+      <button class="modal-close" onclick="closeFeatureModal()">閉じる</button>
+    </div>
   </div>
 
   <!-- 免責事項・利用規約モーダル -->
@@ -902,6 +986,7 @@
     let fmsCounts = {};      // FMS関心度（工区/路線名→レベル）
     let fmsRisk = {};        // FMSリスクデータ（工区名→{total, stuck_total, ...}）
     let prevSummary = null;  // 前日サマリー
+    const FEATURE_VIDEO_URL = ''; // 例: 'https://www.youtube.com/embed/xxxxxxxxxxx'
 
     // スタイル
     function styleFeature(feature) {
@@ -950,13 +1035,14 @@
         html += `<div class="detail-row"><span class="label">お知らせ</span><span class="value">${props['お知らせ']}</span></div>`;
       }
 
-      // FMSリスク（指令期間内の市民報告）
+      // FMSリスク（直近7日間の市民報告）
       const risk = fmsRisk[props['名前']];
       if (risk && risk.total > 0) {
         const stuckLabel = risk.stuck_total > 0
           ? `<span style="color:#c0392b;font-weight:bold">⚠ ${risk.stuck_total}件</span>`
           : '<span style="color:#27ae60">0件</span>';
-        html += `<div class="detail-row"><span class="label">市民報告</span><span class="value">${risk.total}件（除雪後${risk.days_since_snow}日間）</span></div>`;
+        const periodText = risk.days_since_snow != null ? `除雪${risk.days_since_snow}日前` : '直近7日間';
+        html += `<div class="detail-row"><span class="label">市民報告(7日)</span><span class="value">${risk.total}件（${periodText}）</span></div>`;
         html += `<div class="detail-row"><span class="label">スタック関連</span><span class="value">${stuckLabel}</span></div>`;
         if (risk.resolved > 0) {
           html += `<div class="detail-row"><span class="label">改善報告</span><span class="value" style="color:#27ae60">${risk.resolved}件</span></div>`;
@@ -1433,33 +1519,46 @@
       const areas = Object.entries(fmsRisk).filter(([, d]) => d.total > 0);
       if (areas.length === 0) { container.innerHTML = ''; return; }
 
-      // スタック報告ありを上に、次に件数順
-      areas.sort((a, b) => (b[1].stuck_total - a[1].stuck_total) || (b[1].total - a[1].total));
+      // 工区→路線の順、その中でスタック件数→総件数の降順
+      const catOrder = { koku: 0, rosen: 1 };
+      areas.sort((a, b) => {
+        const ca = catOrder[a[1].category] ?? 2;
+        const cb = catOrder[b[1].category] ?? 2;
+        if (ca !== cb) return ca - cb;
+        return (b[1].stuck_total - a[1].stuck_total) || (b[1].total - a[1].total);
+      });
 
+      const kokuAreas = areas.filter(([, d]) => d.category === 'koku');
+      const rosenAreas = areas.filter(([, d]) => d.category === 'rosen');
       const stuckAreas = areas.filter(([, d]) => d.stuck_total > 0);
       const totalReports = areas.reduce((s, [, d]) => s + d.total, 0);
 
       let html = '<div class="bus-section">';
       html += `<h4 style="cursor:pointer;user-select:none" onclick="document.getElementById('fms-risk-detail').style.display=document.getElementById('fms-risk-detail').style.display==='none'?'block':'none'">`;
-      html += `市民報告（${areas.length}エリア・${totalReports}件）`;
+      html += `市民報告 直近7日間（${areas.length}エリア・${totalReports}件）`;
       if (stuckAreas.length > 0) {
         html += ` <span style="background:#c0392b;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px">⚠${stuckAreas.length}</span>`;
       }
       html += ' <span style="font-size:11px;color:#888">▶</span></h4>';
-      html += '<div style="font-size:10px;color:#aaa;margin-bottom:4px">除雪後からの期間内の報告を集計</div>';
+      html += `<div style="font-size:10px;color:#aaa;margin-bottom:4px">工区${kokuAreas.length} / 路線${rosenAreas.length}　※解決済みも含む7日間の記録</div>`;
       html += '<div id="fms-risk-detail" style="display:none">';
 
-      areas.forEach(([name, data]) => {
+      function renderAreaCard(name, data) {
         const hasStuck = data.stuck_total > 0;
         const borderColor = hasStuck ? '#c0392b' : '#e5e7eb';
         const escapedName = name.replace(/'/g, "\\'");
-        html += `<div style="border:1px solid ${borderColor};border-radius:6px;padding:8px;margin-bottom:6px;cursor:pointer;${hasStuck ? 'background:#fef2f2' : ''}" onclick="selectAreaByName('${escapedName}')">`;
-        html += `<div style="font-size:12px;font-weight:bold;color:#1a3a5c;margin-bottom:3px">${name}`;
-        html += `<span style="font-size:10px;color:#888;font-weight:normal;margin-left:6px">除雪後${data.days_since_snow}日</span>`;
-        html += ' <span style="font-size:10px;color:#3498db">▶ 地図で見る</span>';
-        html += '</div>';
+        const catLabel = data.category === 'koku' ? '工区' : '路線';
+        const catColor = data.category === 'koku' ? '#1a3a5c' : '#6b7280';
+        const snowText = data.days_since_snow != null ? `除雪${data.days_since_snow}日前` : '除雪日不明';
 
-        // リスクバー（コンパクト）
+        let card = `<div style="border:1px solid ${borderColor};border-radius:6px;padding:8px;margin-bottom:6px;cursor:pointer;${hasStuck ? 'background:#fef2f2' : ''}" onclick="selectAreaByName('${escapedName}')">`;
+        card += `<div style="font-size:12px;font-weight:bold;color:${catColor};margin-bottom:3px">`;
+        card += `<span style="font-size:9px;background:${catColor};color:#fff;padding:1px 5px;border-radius:4px;margin-right:4px">${catLabel}</span>`;
+        card += name;
+        card += `<span style="font-size:10px;color:#888;font-weight:normal;margin-left:6px">${snowText}</span>`;
+        card += ' <span style="font-size:10px;color:#3498db">▶ 地図で見る</span>';
+        card += '</div>';
+
         const riskItems = [
           ['スタック', data.risk.stacked, '#c0392b'],
           ['走行注意', data.risk.near_stack, '#e67e22'],
@@ -1468,17 +1567,28 @@
         ];
         riskItems.forEach(([label, count, color]) => {
           if (count === 0) return;
-          html += `<div style="font-size:10px;margin-bottom:1px">`;
-          html += `<span style="display:inline-block;width:55px;color:#666">${label}</span>`;
+          card += `<div style="font-size:10px;margin-bottom:1px">`;
+          card += `<span style="display:inline-block;width:55px;color:#666">${label}</span>`;
           const barW = Math.min(Math.max(count * 10, 8), 60);
-          html += `<span style="display:inline-block;width:${barW}px;height:8px;background:${color};border-radius:2px;vertical-align:middle;margin-right:3px"></span>`;
-          html += `<span style="color:#888">${count}</span>`;
-          html += '</div>';
+          card += `<span style="display:inline-block;width:${barW}px;height:8px;background:${color};border-radius:2px;vertical-align:middle;margin-right:3px"></span>`;
+          card += `<span style="color:#888">${count}</span>`;
+          card += '</div>';
         });
 
-        html += '</div>';
-      });
+        card += '</div>';
+        return card;
+      }
 
+      if (kokuAreas.length > 0) {
+        html += `<div style="font-size:11px;font-weight:bold;color:#1a3a5c;margin:8px 0 4px;border-bottom:1px solid #ddd;padding-bottom:3px">工区（${kokuAreas.length}）</div>`;
+        kokuAreas.forEach(([name, data]) => { html += renderAreaCard(name, data); });
+      }
+      if (rosenAreas.length > 0) {
+        html += `<div style="font-size:11px;font-weight:bold;color:#6b7280;margin:12px 0 4px;border-bottom:1px solid #ddd;padding-bottom:3px">路線（${rosenAreas.length}）</div>`;
+        rosenAreas.forEach(([name, data]) => { html += renderAreaCard(name, data); });
+      }
+
+      html += '<div style="font-size:10px;color:#aaa;margin-top:6px">※FMS(FixMyStreet)投稿の統計。解決済みも記録として表示。</div>';
       html += '</div></div>';
       container.innerHTML = html;
     }
@@ -1671,6 +1781,27 @@
     window.closeModal = function(e) {
       if (!e || e.target === document.getElementById('terms-modal')) {
         document.getElementById('terms-modal').classList.remove('active');
+      }
+    };
+
+    function renderFeatureVideo() {
+      const box = document.getElementById('feature-video-container');
+      if (!box) return;
+      if (!FEATURE_VIDEO_URL) {
+        box.className = 'video-empty';
+        box.textContent = '動画URLを設定すると、ここに埋め込み表示されます。';
+        return;
+      }
+      box.className = '';
+      box.innerHTML = `<iframe class="video-embed" src="${FEATURE_VIDEO_URL}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+    }
+    window.openFeatureModal = function() {
+      renderFeatureVideo();
+      document.getElementById('feature-modal').classList.add('active');
+    };
+    window.closeFeatureModal = function(e) {
+      if (!e || e.target === document.getElementById('feature-modal')) {
+        document.getElementById('feature-modal').classList.remove('active');
       }
     };
 
