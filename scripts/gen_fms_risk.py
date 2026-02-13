@@ -6,6 +6,7 @@ import json
 import math
 import os
 import re
+import unicodedata
 from datetime import datetime, timedelta
 
 FMS_CSV = os.path.join(os.path.dirname(__file__), "..", "fms-data", "data", "analysis",
@@ -26,6 +27,11 @@ RISK_PATTERNS = [
 
 # 路線マッチングの最大距離（km）
 ROSEN_MATCH_DISTANCE_KM = 0.3
+
+
+def normalize_name(s):
+    """全角英数字・記号を半角に正規化して比較用文字列を返す"""
+    return unicodedata.normalize("NFKC", s).strip()
 
 
 def classify_risk(text):
@@ -86,7 +92,8 @@ def main():
     with open(KOKU_GEOJSON, encoding="utf-8") as f:
         koku_data = json.load(f)
 
-    koku_info = {}
+    koku_info = {}          # 表示名 → info
+    koku_norm_to_name = {}  # 正規化名 → 表示名（逆引き用）
     for feat in koku_data["features"]:
         props = feat["properties"]
         name = props.get("名前", "")
@@ -97,6 +104,7 @@ def main():
             "days_since_snow": days_since,
             "last_snow_date": props.get("最終除雪日", ""),
         }
+        koku_norm_to_name[normalize_name(name)] = name
 
     # --- 路線GeoJSON ---
     with open(ROSEN_GEOJSON, encoding="utf-8") as f:
@@ -143,9 +151,17 @@ def main():
     unmatched_koku_posts = []  # 工区にマッチしなかった投稿
 
     for row in recent_posts:
-        koku_name = row.get("matched_koku", "").strip()
-        if koku_name and koku_name in koku_info:
-            koku_posts.setdefault(koku_name, []).append(row)
+        csv_koku = row.get("matched_koku", "").strip()
+        # まず完全一致、次に正規化一致で照合
+        if csv_koku and csv_koku in koku_info:
+            koku_posts.setdefault(csv_koku, []).append(row)
+        elif csv_koku:
+            norm = normalize_name(csv_koku)
+            display_name = koku_norm_to_name.get(norm)
+            if display_name:
+                koku_posts.setdefault(display_name, []).append(row)
+            else:
+                unmatched_koku_posts.append(row)
         else:
             unmatched_koku_posts.append(row)
 
