@@ -731,7 +731,54 @@
       document.getElementById('selected-info').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // X投稿の集計表示（原文は非公開）
+    // 投稿をスタック危険度で分類
+    const RISK_TAGS = [
+      { key: 'stacked',       label: 'スタック・立往生', color: '#c0392b', re: /スタック|立ち往生|動け|はまっ|埋ま|出せな|出られ/ },
+      { key: 'near_stack',    label: '走行注意',         color: '#e67e22', re: /空転|わだち|腹.*つ[かけ]|ガタガタ|バンパー|亀裂|段差|ひどい|やばい|ヤバ|デスロード/ },
+      { key: 'passable_slow', label: '通行しづらい',     color: '#f39c12', re: /すれ違|狭|通れ|歩道|通学|歩け|歩行|1車線|一車線/ },
+      { key: 'resolved',      label: '改善',             color: '#27ae60', re: /きれい|感謝|ありがと|解消|入りました|除雪.*入っ|アスファルト.*見え/ },
+    ];
+
+    function classifyRisk(text) {
+      const t = text || '';
+      for (const tag of RISK_TAGS) {
+        if (tag.re.test(t)) return tag.key;
+      }
+      return 'info';
+    }
+
+    function countRisks(posts) {
+      const counts = {};
+      RISK_TAGS.forEach(t => { counts[t.key] = 0; });
+      counts['info'] = 0;
+      posts.forEach(p => { counts[classifyRisk(p.text)]++; });
+      return counts;
+    }
+
+    function renderRiskBars(counts, total, fontSize) {
+      let html = '';
+      RISK_TAGS.forEach(tag => {
+        const c = counts[tag.key] || 0;
+        if (c === 0) return;
+        const pct = Math.round(c / total * 100);
+        const barW = Math.max(pct, 5);
+        html += `<div style="margin-bottom:3px;font-size:${fontSize}px">`;
+        html += `<span style="display:inline-block;width:90px">${tag.label}</span>`;
+        html += `<span style="display:inline-block;width:${barW}%;max-width:55%;height:${fontSize - 1}px;background:${tag.color};border-radius:2px;vertical-align:middle;margin-right:4px"></span>`;
+        html += `<span style="color:#888">${c}件</span>`;
+        html += `</div>`;
+      });
+      const info = counts['info'] || 0;
+      if (info > 0) {
+        html += `<div style="margin-bottom:3px;font-size:${fontSize}px">`;
+        html += `<span style="display:inline-block;width:90px;color:#999">その他</span>`;
+        html += `<span style="color:#aaa">${info}件</span>`;
+        html += `</div>`;
+      }
+      return html;
+    }
+
+    // 工区クリック時：周辺の危険度集計表示
     function showXPosts(areaName) {
       const container = document.getElementById('x-posts-container');
       if (!areaName || xPostsData.length === 0) {
@@ -739,7 +786,6 @@
         return;
       }
 
-      // このエリア + 隣接エリアの投稿を収集
       const meta = areasMeta[areaName];
       const relatedAreas = new Set([areaName]);
       if (meta && meta.neighbors) {
@@ -752,76 +798,49 @@
         return;
       }
 
-      // トピック分類（キーワードベース）
-      const topics = { '通行困難': 0, '歩道・通学路': 0, '排雪要望': 0, '改善報告': 0, 'その他': 0 };
-      posts.forEach(p => {
-        const t = (p.text || '').toLowerCase();
-        if (/すれ違|通れ|狭|スタック|出せ/.test(t)) topics['通行困難']++;
-        else if (/歩道|通学|歩く|歩行/.test(t)) topics['歩道・通学路']++;
-        else if (/排雪|雪捨|除雪.*来な|入って/.test(t)) topics['排雪要望']++;
-        else if (/きれい|感謝|ありがと|解消|入りました/.test(t)) topics['改善報告']++;
-        else topics['その他']++;
-      });
+      const counts = countRisks(posts);
+      const stuckTotal = (counts.stacked || 0) + (counts.near_stack || 0);
 
       let html = '<div class="x-posts-section">';
-      html += `<h4>周辺の市民体感（${posts.length}件の投稿を集計）</h4>`;
-      html += '<div style="font-size:11px;color:#888;margin-bottom:6px">※原文は非公開・統計のみ表示</div>';
-      Object.entries(topics).forEach(([topic, count]) => {
-        if (count === 0) return;
-        const pct = Math.round(count / posts.length * 100);
-        const barWidth = Math.max(pct, 5);
-        const color = topic === '改善報告' ? '#27ae60' : topic === '通行困難' ? '#e74c3c' : topic === '歩道・通学路' ? '#e67e22' : topic === '排雪要望' ? '#3498db' : '#999';
-        html += `<div style="margin-bottom:4px;font-size:12px">`;
-        html += `<span style="display:inline-block;width:80px">${topic}</span>`;
-        html += `<span style="display:inline-block;width:${barWidth}%;max-width:60%;height:12px;background:${color};border-radius:3px;vertical-align:middle;margin-right:4px"></span>`;
-        html += `<span style="color:#666">${count}件</span>`;
-        html += `</div>`;
-      });
+      html += `<h4>周辺の通行リスク（${posts.length}件を集計）</h4>`;
+      if (stuckTotal > 0) {
+        html += `<div style="font-size:13px;font-weight:bold;color:#c0392b;margin-bottom:6px">⚠ スタック関連: ${stuckTotal}件</div>`;
+      }
+      html += renderRiskBars(counts, posts.length, 12);
+      html += '<div style="font-size:10px;color:#aaa;margin-top:4px">※SNS投稿の統計。原文非公開。</div>';
       html += '</div>';
       container.innerHTML = html;
     }
 
-    // 全体の市民体感サマリー（折りたたみ）
+    // 全体の通行リスクサマリー（折りたたみ）
     function showUnmatchedPosts() {
       const container = document.getElementById('x-unmatched');
       if (xPostsData.length === 0) { container.innerHTML = ''; return; }
 
       const total = xPostsData.length;
       const withArea = xPostsData.filter(p => p.area && p.area.length > 0).length;
+      const counts = countRisks(xPostsData);
+      const stuckTotal = (counts.stacked || 0) + (counts.near_stack || 0);
+      const resolvedCount = counts.resolved || 0;
+      const resolvedPct = total > 0 ? Math.round(resolvedCount / total * 100) : 0;
 
       let html = '<div class="x-posts-section">';
       html += '<div class="collapsible-header" onclick="toggleUnmatched()">';
-      html += `<h4 style="margin:0">市民体感サマリー（${total}件）</h4>`;
+      html += `<h4 style="margin:0">通行リスク観測（${total}件）`;
+      if (stuckTotal > 0) html += ` <span style="background:#c0392b;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px">⚠${stuckTotal}</span>`;
+      html += '</h4>';
       html += '<span class="toggle" id="unmatched-toggle">▼ 開く</span>';
       html += '</div>';
       html += '<div class="collapsible-body collapsed" id="unmatched-body">';
-      html += `<div style="font-size:12px;color:#555;margin-bottom:8px">収集した${total}件のSNS投稿を統計化しています。原文は公開していません。</div>`;
 
-      // 全体トピック集計
-      const topics = { '通行困難': 0, '歩道・通学路': 0, '排雪要望': 0, '改善報告': 0, '情報共有': 0 };
-      xPostsData.forEach(p => {
-        const t = (p.text || '').toLowerCase();
-        if (/すれ違|通れ|狭|スタック|出せ/.test(t)) topics['通行困難']++;
-        else if (/歩道|通学|歩く|歩行/.test(t)) topics['歩道・通学路']++;
-        else if (/排雪|雪捨|除雪.*来な|入って/.test(t)) topics['排雪要望']++;
-        else if (/きれい|感謝|ありがと|解消|入りました/.test(t)) topics['改善報告']++;
-        else topics['情報共有']++;
-      });
+      html += renderRiskBars(counts, total, 11);
 
-      html += '<div style="font-size:11px;font-weight:bold;color:#1a3a5c;margin-bottom:4px">トピック構成</div>';
-      Object.entries(topics).forEach(([topic, count]) => {
-        if (count === 0) return;
-        const pct = Math.round(count / total * 100);
-        const barWidth = Math.max(pct, 5);
-        const color = topic === '改善報告' ? '#27ae60' : topic === '通行困難' ? '#e74c3c' : topic === '歩道・通学路' ? '#e67e22' : topic === '排雪要望' ? '#3498db' : '#999';
-        html += `<div style="margin-bottom:3px;font-size:11px">`;
-        html += `<span style="display:inline-block;width:75px">${topic}</span>`;
-        html += `<span style="display:inline-block;width:${barWidth}%;max-width:55%;height:10px;background:${color};border-radius:2px;vertical-align:middle;margin-right:4px"></span>`;
-        html += `<span style="color:#888">${pct}%</span>`;
-        html += `</div>`;
-      });
+      html += '<div style="border-top:1px solid #eee;margin-top:6px;padding-top:6px;font-size:11px;color:#666">';
+      html += `改善シグナル率: <b style="color:#27ae60">${resolvedPct}%</b>（${resolvedCount}/${total}件）`;
+      html += `<br>エリア特定率: ${Math.round(withArea / total * 100)}%（${withArea}/${total}件）`;
+      html += '</div>';
 
-      html += `<div style="font-size:11px;color:#aaa;margin-top:6px">エリア特定率: ${Math.round(withArea / total * 100)}%（${withArea}/${total}件）</div>`;
+      html += '<div style="font-size:10px;color:#aaa;margin-top:4px">SNS投稿を統計化。原文は公開していません。</div>';
       html += '</div></div>';
       container.innerHTML = html;
     }
