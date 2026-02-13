@@ -989,24 +989,35 @@
     let busSuspendedData = null; // バス運休路線GeoJSON
     const FEATURE_VIDEO_URL = ''; // 例: 'https://www.youtube.com/embed/xxxxxxxxxxx'
 
-    // スタイル
-    function styleFeature(feature) {
-      const status = feature.properties['ステータス'] || '';
-      const color = getColor(status);
+    // スタイル（初期表示は無色、フィルター選択時のみ着色）
+    function neutralStyle(feature) {
       const geomType = feature.geometry.type;
       if (geomType === 'Polygon') {
-        return { color: '#333', weight: 1.5, fillColor: color, fillOpacity: 0.3 };
+        return { color: '#999', weight: 1, fillColor: '#ddd', fillOpacity: 0.1 };
+      }
+      return { color: '#bbb', weight: 2, opacity: 0.4 };
+    }
+
+    function coloredStyle(feature) {
+      const color = getColor(feature.properties['ステータス'] || '');
+      const geomType = feature.geometry.type;
+      if (geomType === 'Polygon') {
+        return { color: '#333', weight: 1.5, fillColor: color, fillOpacity: 0.35 };
       }
       return { color: color, weight: 4, opacity: 0.8 };
+    }
+
+    function styleFeature(feature) {
+      return neutralStyle(feature);
     }
 
     function highlightStyle(feature) {
       const color = getColor(feature.properties['ステータス'] || '');
       const geomType = feature.geometry.type;
       if (geomType === 'Polygon') {
-        return { color: '#333', weight: 3, fillColor: color, fillOpacity: 0.6 };
+        return { color: color, weight: 3, fillColor: color, fillOpacity: 0.5 };
       }
-      return { color: '#333', weight: 6, opacity: 1 };
+      return { color: color, weight: 6, opacity: 1 };
     }
 
     // 選択時のパネル表示
@@ -1205,7 +1216,7 @@
 
       // 前の選択をリセット
       if (selectedLayer && selectedLayer !== layer) {
-        selectedLayer.setStyle(styleFeature(selectedLayer.feature));
+        selectedLayer.setStyle(neutralStyle(selectedLayer.feature));
       }
       selectedLayer = layer;
       layer.setStyle(highlightStyle(feature));
@@ -1221,7 +1232,7 @@
       const { layer, feature } = item;
 
       if (selectedLayer && selectedLayer !== layer) {
-        selectedLayer.setStyle(styleFeature(selectedLayer.feature));
+        selectedLayer.setStyle(neutralStyle(selectedLayer.feature));
       }
       selectedLayer = layer;
       layer.setStyle(highlightStyle(feature));
@@ -1241,7 +1252,7 @@
       if (!item) return;
       const { layer, feature } = item;
       if (selectedLayer && selectedLayer !== layer) {
-        selectedLayer.setStyle(styleFeature(selectedLayer.feature));
+        selectedLayer.setStyle(neutralStyle(selectedLayer.feature));
       }
       selectedLayer = layer;
       layer.setStyle(highlightStyle(feature));
@@ -1329,9 +1340,9 @@
         activeCardType = null;
         activeCardStatus = null;
         document.getElementById('area-list-section').style.display = 'none';
-        // 全レイヤー表示復帰
+        // 全レイヤーを無色に戻す
         allLayers.forEach(({ layer, feature }) => {
-          layer.setStyle({ ...styleFeature(feature), opacity: 0.8, fillOpacity: 0.35 });
+          layer.setStyle(neutralStyle(feature));
         });
         // active解除
         document.querySelectorAll('.summary-item.active').forEach(el => el.classList.remove('active'));
@@ -1379,13 +1390,13 @@
       // 一覧位置にスクロール
       document.getElementById('area-list-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      // 地図上の表示を絞る
+      // 地図上の表示を絞る（対象だけ着色、他は薄く）
       const filteredSet = new Set(filtered.map(f => f._globalIndex));
       allLayers.forEach(({ layer, feature }) => {
         if (filteredSet.has(feature._globalIndex)) {
-          layer.setStyle({ ...styleFeature(feature), opacity: 0.8, fillOpacity: 0.35 });
+          layer.setStyle(coloredStyle(feature));
         } else {
-          layer.setStyle({ opacity: 0.1, fillOpacity: 0.05, weight: 1 });
+          layer.setStyle({ color: '#ccc', weight: 0.5, opacity: 0.15, fillOpacity: 0.03 });
         }
       });
     };
@@ -1412,15 +1423,15 @@
 
       // 選択解除
       if (selectedLayer) {
-        selectedLayer.setStyle(styleFeature(selectedLayer.feature));
+        selectedLayer.setStyle(neutralStyle(selectedLayer.feature));
         selectedLayer = null;
       }
       document.getElementById('selected-info').innerHTML = '';
       document.getElementById('x-posts-container').innerHTML = '';
 
-      // 全レイヤー表示復帰
+      // 全レイヤーを無色に戻す
       allLayers.forEach(({ layer, feature }) => {
-        layer.setStyle(styleFeature(feature));
+        layer.setStyle(neutralStyle(feature));
       });
 
       // 地図を全体表示
@@ -1439,19 +1450,9 @@
     const legend = L.control({ position: 'bottomleft' });
     legend.onAdd = function() {
       const div = L.DomUtil.create('div', 'legend');
-      const items = [
-        ['作業予定あり', '#e74c3c'],
-        ['現場確認中', '#3498db'],
-        ['日程調整中', '#e67e22'],
-      ];
-      items.forEach(([label, color]) => {
-        div.innerHTML += `<div class="legend-item"><span class="legend-color" style="background:${color}"></span>${label}</div>`;
-      });
       div.innerHTML += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
-      div.innerHTML += '<div class="legend-item"><span style="display:inline-block;background:#c0392b;color:#fff;font-size:8px;font-weight:bold;border-radius:6px;padding:0 3px;line-height:1.4">⚠3</span> スタック報告あり</div>';
-      div.innerHTML += '<div class="legend-item"><span style="display:inline-block;background:#8b5cf6;color:#fff;font-size:8px;font-weight:bold;border-radius:6px;padding:0 3px;line-height:1.4">5</span> 市民報告あり</div>';
-      div.innerHTML += '<div class="legend-item"><span style="display:inline-block;width:14px;height:14px;background:#dc2626;border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px rgba(220,38,38,0.6);flex-shrink:0"></span> SOS発信中</div>';
       div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#f59e0b;background:repeating-linear-gradient(90deg,#f59e0b 0 6px,transparent 6px 10px)"></span> バス運休区間</div>';
+      div.innerHTML += '<div class="legend-item"><span style="display:inline-block;width:14px;height:14px;background:#dc2626;border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px rgba(220,38,38,0.6);flex-shrink:0"></span> SOS発信中</div>';
       div.innerHTML += '<div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:10px;color:#888">国道（国交省）</div>';
       div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
       div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済み</div>';
