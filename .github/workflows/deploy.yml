@@ -1,0 +1,27 @@
+name: Firebase Hosting デプロイ
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["除排雪状況取得"]
+    types: [completed]
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Firebase API キーを注入
+        run: sed -i 's/__FIREBASE_API_KEY__/${{ secrets.FIREBASE_API_KEY }}/' docs/index.html
+
+      - name: Firebase にデプロイ
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: aomori-snow-tracker
