@@ -1108,9 +1108,15 @@
         return;
       }
 
+      // 運休件数をカウント
+      const issueCount = (busStatusData.new_info || []).length + (busStatusData.continuing || []).length;
+      const badge = issueCount > 0 ? ` <span class="bus-badge">${issueCount}</span>` : '';
+
       let html = '<div class="bus-section">';
-      html += '<h4>青森市営バス運行状況</h4>';
+      html += `<h4 style="cursor:pointer;user-select:none" onclick="document.getElementById('bus-detail').style.display=document.getElementById('bus-detail').style.display==='none'?'block':'none'">🚌 市営バス運行状況${badge} <span style="font-size:11px;color:#888">▶</span></h4>`;
       html += `<div class="bus-meta">最終更新: ${busStatusData.updated_at || '-'}</div>`;
+      html += '<div id="bus-detail" style="display:none">';
+
       if (busStatusData.next_update_notice) {
         const prep = busStatusData.next_update_notice;
         html += '<div class="bus-note">';
@@ -1134,7 +1140,7 @@
         html += '</div>';
       }
 
-      html += '</div>';
+      html += '</div></div>';
       container.innerHTML = html;
     }
 
