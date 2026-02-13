@@ -37,6 +37,9 @@ jobs:
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
         run: python scripts/fetch_kml.py
 
+      - name: FMSリスク集計
+        run: python scripts/gen_fms_risk.py
+
       - name: 前日サマリー生成
         run: python scripts/gen_prev_summary.py
 

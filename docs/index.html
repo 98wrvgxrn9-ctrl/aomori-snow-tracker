@@ -646,7 +646,8 @@
     let dumpSites = [];   // 雪捨て場データ
     let busStatusData = null; // 市営バス運行状況
     let kokudoFeatures = []; // 国道除雪状況
-    let fmsCounts = {};      // FMS投稿数（工区/路線名→件数）
+    let fmsCounts = {};      // FMS関心度（工区/路線名→レベル）
+    let fmsRisk = {};        // FMSリスクデータ（工区名→{total, stuck_total, ...}）
     let prevSummary = null;  // 前日サマリー
 
     // スタイル
@@ -696,17 +697,17 @@
         html += `<div class="detail-row"><span class="label">お知らせ</span><span class="value">${props['お知らせ']}</span></div>`;
       }
 
-      // 関心度
-      const interestLevel = fmsCounts[props['名前']] || 0;
-      if (interestLevel > 0) {
-        const labels = ['', '低', 'やや低', '普通', 'やや高', '高'];
-        let bars = '';
-        for (let b = 0; b < 5; b++) {
-          const h = 6 + b * 3;
-          const color = b < interestLevel ? '#8b5cf6' : '#ddd';
-          bars += `<span style="display:inline-block;width:4px;height:${h}px;background:${color};border-radius:1px;margin-right:1px;vertical-align:bottom"></span>`;
+      // FMSリスク（指令期間内の市民報告）
+      const risk = fmsRisk[props['名前']];
+      if (risk && risk.total > 0) {
+        const stuckLabel = risk.stuck_total > 0
+          ? `<span style="color:#c0392b;font-weight:bold">⚠ ${risk.stuck_total}件</span>`
+          : '<span style="color:#27ae60">0件</span>';
+        html += `<div class="detail-row"><span class="label">市民報告</span><span class="value">${risk.total}件（除雪後${risk.days_since_snow}日間）</span></div>`;
+        html += `<div class="detail-row"><span class="label">スタック関連</span><span class="value">${stuckLabel}</span></div>`;
+        if (risk.resolved > 0) {
+          html += `<div class="detail-row"><span class="label">改善報告</span><span class="value" style="color:#27ae60">${risk.resolved}件</span></div>`;
         }
-        html += `<div class="detail-row"><span class="label">関心度</span><span class="value">${bars} ${labels[interestLevel]}</span></div>`;
       }
 
       // 空間情報（メタデータ）
@@ -1091,13 +1092,8 @@
         div.innerHTML += `<div class="legend-item"><span class="legend-color" style="background:${color}"></span>${label}</div>`;
       });
       div.innerHTML += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
-      let barExample = '';
-      for (let b = 0; b < 5; b++) {
-        const h = 4 + b * 2;
-        const color = b < 4 ? '#8b5cf6' : '#ddd';
-        barExample += `<span style="display:inline-block;width:3px;height:${h}px;background:${color};border-radius:1px;margin-right:1px;vertical-align:bottom"></span>`;
-      }
-      div.innerHTML += `<div class="legend-item">${barExample} 関心度</div>`;
+      div.innerHTML += '<div class="legend-item"><span style="display:inline-block;background:#c0392b;color:#fff;font-size:8px;font-weight:bold;border-radius:6px;padding:0 3px;line-height:1.4">⚠3</span> スタック報告あり</div>';
+      div.innerHTML += '<div class="legend-item"><span style="display:inline-block;background:#8b5cf6;color:#fff;font-size:8px;font-weight:bold;border-radius:6px;padding:0 3px;line-height:1.4">5</span> 市民報告あり</div>';
       div.innerHTML += '<div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:10px;color:#888">国道（国交省）</div>';
       div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
       div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済み</div>';
@@ -1127,6 +1123,14 @@
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { dumpSites = data.sites || []; })
         .catch(err => { console.warn('雪捨て場データ読み込み失敗:', err); dumpSites = []; });
+    }
+
+    // FMSリスクデータ読み込み
+    function loadFmsRisk() {
+      return fetch('data/fms_risk.json')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => { fmsRisk = (data && data.areas) || {}; })
+        .catch(err => { console.warn('FMSリスク読み込み失敗:', err); fmsRisk = {}; });
     }
 
     // 前日サマリー読み込み
@@ -1235,6 +1239,7 @@
       loadDumpSites(),
       loadKokudoStatus(),
       loadFmsCounts(),
+      loadFmsRisk(),
       loadPrevSummary(),
       loadBusStatus(),
     ]).then(([kokuFeatures, rosenFeatures]) => {
@@ -1268,16 +1273,12 @@
           const meta = areasMeta[feature.properties['名前']];
           if (meta && meta.centroid) {
             const areaName = feature.properties['名前'];
-            const interestLevel = fmsCounts[areaName] || 0;
             let labelHtml = areaName;
-            if (interestLevel > 0) {
-              let bars = '';
-              for (let b = 0; b < 5; b++) {
-                const h = 4 + b * 2;
-                const color = b < interestLevel ? '#8b5cf6' : '#ddd';
-                bars += `<span class="bar-fill" style="height:${h}px;background:${color}"></span>`;
-              }
-              labelHtml += `<span class="interest-bar">${bars}</span>`;
+            const risk = fmsRisk[areaName];
+            if (risk && risk.stuck_total > 0) {
+              labelHtml += `<span style="display:inline-block;background:#c0392b;color:#fff;font-size:8px;font-weight:bold;border-radius:6px;padding:0 3px;margin-left:2px;vertical-align:top;text-shadow:none;line-height:1.4">⚠${risk.stuck_total}</span>`;
+            } else if (risk && risk.total > 0) {
+              labelHtml += `<span style="display:inline-block;background:#8b5cf6;color:#fff;font-size:8px;font-weight:bold;border-radius:6px;padding:0 3px;margin-left:2px;vertical-align:top;text-shadow:none;line-height:1.4">${risk.total}</span>`;
             }
             const label = L.marker([meta.centroid[1], meta.centroid[0]], {
               icon: L.divIcon({
