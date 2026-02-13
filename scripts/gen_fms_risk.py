@@ -129,6 +129,11 @@ def main():
         rosen_coords[name].extend(coords)
 
     # --- FMS投稿読み込み（直近7日間のみ） ---
+    if not os.path.exists(FMS_CSV):
+        print(f"FMS CSVが見つかりません: {FMS_CSV}")
+        print("既存のfms_risk.jsonを維持します。")
+        return
+
     with open(FMS_CSV, encoding="utf-8-sig") as f:
         fms_rows = list(csv.DictReader(f))
 
