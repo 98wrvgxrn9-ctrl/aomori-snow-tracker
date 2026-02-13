@@ -646,6 +646,7 @@
     let busStatusData = null; // 市営バス運行状況
     let kokudoFeatures = []; // 国道除雪状況
     let fmsCounts = {};      // FMS投稿数（工区/路線名→件数）
+    let prevSummary = null;  // 前日サマリー
 
     // スタイル
     function styleFeature(feature) {
@@ -877,13 +878,41 @@
       const kTotal = kokuFeatures.length;
       const rTotal = rosenFeatures.length;
 
+      function diffBadge(current, prev) {
+        if (prev == null) return '';
+        const d = current - prev;
+        if (d === 0) return '<span style="font-size:10px;color:#999;margin-left:2px">±0</span>';
+        const color = d > 0 ? '#e74c3c' : '#27ae60';
+        const arrow = d > 0 ? '↑' : '↓';
+        return `<span style="font-size:10px;color:${color};margin-left:2px">${arrow}${Math.abs(d)}</span>`;
+      }
+
       function summaryRow(type, label, counts, total) {
         const otherCount = total - counts.scheduled - counts.checking - counts.adjusting;
+        const prev = prevSummary ? prevSummary[type] : null;
+        const prevDate = prevSummary ? prevSummary.date : '';
+        const prevLabel = prevDate ? prevDate.slice(5).replace('-', '/') : '';
+
         let html = `<div class="summary-section-title">${label}（全${total}）</div>`;
         html += '<div class="summary-grid">';
-        html += `<div class="summary-item" onclick="filterByCard('${type}','scheduled')"><div class="count count-scheduled">${counts.scheduled}<span class="total">/${total}</span></div><div class="label">作業予定あり</div></div>`;
-        html += `<div class="summary-item" onclick="filterByCard('${type}','checking')"><div class="count count-checking">${counts.checking}<span class="total">/${total}</span></div><div class="label">現場確認中</div></div>`;
-        html += `<div class="summary-item" onclick="filterByCard('${type}','adjusting')"><div class="count count-adjusting">${counts.adjusting}<span class="total">/${total}</span></div><div class="label">日程調整中</div></div>`;
+
+        const items = [
+          ['scheduled', '作業予定あり', counts.scheduled],
+          ['checking', '現場確認中', counts.checking],
+          ['adjusting', '日程調整中', counts.adjusting],
+        ];
+
+        items.forEach(([key, name, val]) => {
+          const prevVal = prev ? prev[key] : null;
+          const diff = diffBadge(val, prevVal);
+          const prevLine = prev != null ? `<div style="font-size:9px;color:#aaa;margin-top:1px">前日 ${prev[key]}/${prev.total}</div>` : '';
+          html += `<div class="summary-item" onclick="filterByCard('${type}','${key}')">`;
+          html += `<div class="count count-${key}">${val}<span class="total">/${total}</span>${diff}</div>`;
+          html += `<div class="label">${name}</div>`;
+          html += prevLine;
+          html += `</div>`;
+        });
+
         html += '</div>';
         if (otherCount > 0) {
           html += `<div style="font-size:11px;color:#999;text-align:right;margin-top:-4px;margin-bottom:8px;cursor:pointer" onclick="filterByCard('${type}','other')">その他: ${otherCount} ▶</div>`;
@@ -1062,6 +1091,14 @@
         .catch(err => { console.warn('雪捨て場データ読み込み失敗:', err); dumpSites = []; });
     }
 
+    // 前日サマリー読み込み
+    function loadPrevSummary() {
+      return fetch('data/prev_summary.json')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => { prevSummary = data || null; })
+        .catch(err => { console.warn('前日サマリー読み込み失敗:', err); prevSummary = null; });
+    }
+
     // FMS投稿数読み込み
     function loadFmsCounts() {
       return fetch('data/fms_counts.json')
@@ -1160,6 +1197,7 @@
       loadDumpSites(),
       loadKokudoStatus(),
       loadFmsCounts(),
+      loadPrevSummary(),
       loadBusStatus(),
     ]).then(([kokuFeatures, rosenFeatures]) => {
       const combined = [...kokuFeatures, ...rosenFeatures];
