@@ -896,6 +896,22 @@
       }
     };
 
+    // 工区名から地図選択
+    window.selectAreaByName = function(name) {
+      const item = allLayers.find(l => l.feature.properties['名前'] === name);
+      if (!item) return;
+      const { layer, feature } = item;
+      if (selectedLayer && selectedLayer !== layer) {
+        selectedLayer.setStyle(styleFeature(selectedLayer.feature));
+      }
+      selectedLayer = layer;
+      layer.setStyle(highlightStyle(feature));
+      showDetail(feature.properties);
+      if (layer.getBounds) {
+        map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 15 });
+      }
+    };
+
     // サマリー表示（工区・路線別、母数付き、クリックでフィルター＋一覧表示）
     let kokuFeaturesGlobal = [];
     let rosenFeaturesGlobal = [];
@@ -1183,9 +1199,11 @@
       areas.forEach(([name, data]) => {
         const hasStuck = data.stuck_total > 0;
         const borderColor = hasStuck ? '#c0392b' : '#e5e7eb';
-        html += `<div style="border:1px solid ${borderColor};border-radius:6px;padding:8px;margin-bottom:6px;${hasStuck ? 'background:#fef2f2' : ''}">`;
+        const escapedName = name.replace(/'/g, "\\'");
+        html += `<div style="border:1px solid ${borderColor};border-radius:6px;padding:8px;margin-bottom:6px;cursor:pointer;${hasStuck ? 'background:#fef2f2' : ''}" onclick="selectAreaByName('${escapedName}')">`;
         html += `<div style="font-size:12px;font-weight:bold;color:#1a3a5c;margin-bottom:3px">${name}`;
         html += `<span style="font-size:10px;color:#888;font-weight:normal;margin-left:6px">除雪後${data.days_since_snow}日</span>`;
+        html += ' <span style="font-size:10px;color:#3498db">▶ 地図で見る</span>';
         html += '</div>';
 
         // リスクバー（コンパクト）
