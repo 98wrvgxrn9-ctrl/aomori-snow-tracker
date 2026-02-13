@@ -32,8 +32,8 @@ STYLE_STATUS = {
 
 STYLE_COLORS = {
     "line1": "#cccccc",
-    "line2": "#ff7f2d",
-    "line3": "#ff0000",
+    "line2": "#16a085",
+    "line3": "#f1c40f",
 }
 
 
