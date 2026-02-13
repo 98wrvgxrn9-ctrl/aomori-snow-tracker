@@ -987,6 +987,8 @@
     let fmsRisk = {};        // FMSリスクデータ（工区名→{total, stuck_total, ...}）
     let prevSummary = null;  // 前日サマリー
     let busSuspendedData = null; // バス運休路線GeoJSON
+    let busLayers = [];          // バス運休路線のLeafletレイヤー群
+    let busLayersVisible = false; // バス路線表示状態
     const FEATURE_VIDEO_URL = ''; // 例: 'https://www.youtube.com/embed/xxxxxxxxxxx'
 
     // スタイル（初期表示は無色、フィルター選択時のみ着色）
@@ -1421,6 +1423,18 @@
       document.querySelectorAll('.summary-item.active').forEach(el => el.classList.remove('active'));
       document.getElementById('area-list-section').style.display = 'none';
 
+      // バスレイヤー非表示
+      if (busLayersVisible) {
+        busLayers.forEach(({ line, dash, stops }) => {
+          map.removeLayer(line);
+          map.removeLayer(dash);
+          stops.forEach(m => map.removeLayer(m));
+        });
+        busLayersVisible = false;
+        const btn = document.getElementById('bus-map-toggle');
+        if (btn) { btn.textContent = '🗺 地図に表示'; btn.style.background = '#f59e0b'; }
+      }
+
       // 選択解除
       if (selectedLayer) {
         selectedLayer.setStyle(neutralStyle(selectedLayer.feature));
@@ -1451,7 +1465,7 @@
     legend.onAdd = function() {
       const div = L.DomUtil.create('div', 'legend');
       div.innerHTML += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#f59e0b;background:repeating-linear-gradient(90deg,#f59e0b 0 6px,transparent 6px 10px)"></span> バス運休区間</div>';
+      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#dc2626"></span> バス運休区間 <span style="font-size:9px;color:#aaa">※下部で表示</span></div>';
       div.innerHTML += '<div class="legend-item"><span style="display:inline-block;width:14px;height:14px;background:#dc2626;border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px rgba(220,38,38,0.6);flex-shrink:0"></span> SOS発信中</div>';
       div.innerHTML += '<div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:10px;color:#888">国道（国交省）</div>';
       div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
@@ -1627,6 +1641,27 @@
       return html;
     }
 
+    // バス運休路線の地図表示トグル
+    window.toggleBusLayers = function() {
+      busLayersVisible = !busLayersVisible;
+      const btn = document.getElementById('bus-map-toggle');
+      if (busLayersVisible) {
+        busLayers.forEach(({ line, dash, stops }) => {
+          line.addTo(map);
+          dash.addTo(map);
+          stops.forEach(m => m.addTo(map));
+        });
+        if (btn) { btn.textContent = '🗺 地図から非表示'; btn.style.background = '#dc2626'; }
+      } else {
+        busLayers.forEach(({ line, dash, stops }) => {
+          map.removeLayer(line);
+          map.removeLayer(dash);
+          stops.forEach(m => map.removeLayer(m));
+        });
+        if (btn) { btn.textContent = '🗺 地図に表示'; btn.style.background = '#f59e0b'; }
+      }
+    };
+
     function showBusStatus() {
       const container = document.getElementById('bus-status');
       if (!busStatusData) {
@@ -1637,10 +1672,14 @@
       // 運休件数をカウント
       const issueCount = (busStatusData.new_info || []).length + (busStatusData.continuing || []).length;
       const badge = issueCount > 0 ? ` <span class="bus-badge">${issueCount}</span>` : '';
+      const hasSuspended = busLayers.length > 0;
 
       let html = '<div class="bus-section">';
       html += `<h4 style="cursor:pointer;user-select:none" onclick="document.getElementById('bus-detail').style.display=document.getElementById('bus-detail').style.display==='none'?'block':'none'">🚌 市営バス運行状況${badge} <span style="font-size:11px;color:#888">▶</span></h4>`;
       html += `<div class="bus-meta">最終更新: ${busStatusData.updated_at || '-'}</div>`;
+      if (hasSuspended) {
+        html += `<button id="bus-map-toggle" onclick="toggleBusLayers()" style="background:#f59e0b;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:bold;cursor:pointer;margin-bottom:8px">🗺 地図に表示</button>`;
+      }
       html += '<div id="bus-detail" style="display:none">';
 
       if (busStatusData.next_update_notice) {
@@ -1769,45 +1808,51 @@
         layer.bindTooltip(status, { sticky: true, direction: 'top' });
       });
 
-      // バス運休路線レイヤー表示
+      // バス運休路線レイヤー準備（初期非表示）
       if (busSuspendedData && busSuspendedData.features) {
         busSuspendedData.features.forEach(feature => {
           const props = feature.properties;
-          // 運休区間ライン（オレンジ破線）
-          const busLayer = L.geoJSON(feature, {
-            style: { color: '#f59e0b', weight: 6, opacity: 0.8, dashArray: '10, 8' },
-          }).addTo(map);
+          // 運休区間ライン（赤太線 + 白破線で❌感）
+          const busLine = L.geoJSON(feature, {
+            style: { color: '#dc2626', weight: 7, opacity: 0.9 },
+          });
+          const busDash = L.geoJSON(feature, {
+            style: { color: '#fff', weight: 3, opacity: 0.8, dashArray: '8, 12' },
+          });
 
           let popupHtml = `<div style="min-width:180px">`;
-          popupHtml += `<div style="font-size:13px;font-weight:bold;color:#f59e0b;margin-bottom:4px">🚌 ${props.name}</div>`;
-          popupHtml += `<div style="font-size:12px;margin-bottom:4px"><span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:11px">${props.status}</span></div>`;
-          popupHtml += `<div style="font-size:12px;margin-bottom:3px"><b>区間:</b> ${props.from_stop} ～ ${props.to_stop}</div>`;
+          popupHtml += `<div style="font-size:14px;font-weight:bold;color:#dc2626;margin-bottom:4px">❌ ${props.name}</div>`;
+          popupHtml += `<div style="font-size:12px;margin-bottom:4px"><span style="background:#dc2626;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold">${props.status}</span></div>`;
+          popupHtml += `<div style="font-size:12px;margin-bottom:3px"><b>運休区間:</b> ${props.from_stop} ～ ${props.to_stop}</div>`;
           if (props.detour_notice) {
-            popupHtml += `<div style="font-size:11px;color:#666;margin-bottom:3px">${props.detour_notice}</div>`;
+            popupHtml += `<div style="font-size:11px;color:#666;margin-bottom:3px;background:#fef2f2;padding:6px;border-radius:4px">${props.detour_notice}</div>`;
           }
-          // 停留所リスト
           if (props.stops && props.stops.length > 0) {
             popupHtml += `<div style="font-size:10px;color:#888;border-top:1px solid #eee;padding-top:4px;margin-top:4px">`;
             popupHtml += `停留所: ${props.stops.map(s => s.name).join(' → ')}`;
             popupHtml += `</div>`;
           }
           popupHtml += `</div>`;
-          busLayer.bindPopup(popupHtml);
-          busLayer.bindTooltip(`🚌 ${props.name}（${props.status}）`, { sticky: true, direction: 'top' });
+          busLine.bindPopup(popupHtml);
+          busLine.bindTooltip(`❌ ${props.name}（${props.status}）`, { sticky: true, direction: 'top' });
 
-          // 停留所マーカー（小さなオレンジ丸）
+          // 停留所❌マーカー
+          const stopMarkers = [];
           if (props.stops) {
             props.stops.forEach(stop => {
               const icon = L.divIcon({
                 className: '',
-                html: '<div style="width:8px;height:8px;background:#f59e0b;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>',
-                iconSize: [8, 8],
-                iconAnchor: [4, 4],
+                html: '<div style="width:18px;height:18px;background:#dc2626;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(220,38,38,0.5);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:bold">✕</div>',
+                iconSize: [18, 18],
+                iconAnchor: [9, 9],
               });
-              L.marker([stop.lat, stop.lng], { icon: icon }).addTo(map)
-                .bindTooltip(stop.name, { direction: 'top', className: 'dump-tooltip' });
+              const m = L.marker([stop.lat, stop.lng], { icon: icon });
+              m.bindTooltip(`❌ ${stop.name}（運休中）`, { direction: 'top', className: 'dump-tooltip' });
+              stopMarkers.push(m);
             });
           }
+
+          busLayers.push({ line: busLine, dash: busDash, stops: stopMarkers });
         });
       }
 
