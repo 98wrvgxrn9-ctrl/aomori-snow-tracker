@@ -927,7 +927,6 @@
       </div>
       <div id="panel-content">
         <div id="summary"></div>
-        <div id="bus-status"></div>
         <div id="x-unmatched"></div>
         <div id="fms-risk-panel"></div>
         <div id="selected-info"></div>
@@ -941,6 +940,7 @@
             <div id="area-list"></div>
           </div>
         </div>
+        <div id="bus-status"></div>
       </div>
     </div>
   </div>
@@ -986,6 +986,7 @@
     let fmsCounts = {};      // FMS関心度（工区/路線名→レベル）
     let fmsRisk = {};        // FMSリスクデータ（工区名→{total, stuck_total, ...}）
     let prevSummary = null;  // 前日サマリー
+    let busSuspendedData = null; // バス運休路線GeoJSON
     const FEATURE_VIDEO_URL = ''; // 例: 'https://www.youtube.com/embed/xxxxxxxxxxx'
 
     // スタイル
@@ -1450,6 +1451,7 @@
       div.innerHTML += '<div class="legend-item"><span style="display:inline-block;background:#c0392b;color:#fff;font-size:8px;font-weight:bold;border-radius:6px;padding:0 3px;line-height:1.4">⚠3</span> スタック報告あり</div>';
       div.innerHTML += '<div class="legend-item"><span style="display:inline-block;background:#8b5cf6;color:#fff;font-size:8px;font-weight:bold;border-radius:6px;padding:0 3px;line-height:1.4">5</span> 市民報告あり</div>';
       div.innerHTML += '<div class="legend-item"><span style="display:inline-block;width:14px;height:14px;background:#dc2626;border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px rgba(220,38,38,0.6);flex-shrink:0"></span> SOS発信中</div>';
+      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#f59e0b;background:repeating-linear-gradient(90deg,#f59e0b 0 6px,transparent 6px 10px)"></span> バス運休区間</div>';
       div.innerHTML += '<div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:10px;color:#888">国道（国交省）</div>';
       div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
       div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済み</div>';
@@ -1601,6 +1603,14 @@
         .catch(err => { console.warn('バス運行状況データ読み込み失敗:', err); busStatusData = null; });
     }
 
+    // バス運休路線GeoJSON読み込み
+    function loadBusSuspended() {
+      return fetch('data/bus_suspended.geojson')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => { busSuspendedData = data || null; })
+        .catch(err => { console.warn('バス運休路線データ読み込み失敗:', err); busSuspendedData = null; });
+    }
+
     function renderBusList(title, items, withType) {
       if (!items || items.length === 0) return '';
       let html = '<div class="bus-list">';
@@ -1678,6 +1688,7 @@
       loadFmsRisk(),
       loadPrevSummary(),
       loadBusStatus(),
+      loadBusSuspended(),
     ]).then(([kokuFeatures, rosenFeatures]) => {
       const combined = [...kokuFeatures, ...rosenFeatures];
       allFeatures = combined;
@@ -1756,6 +1767,48 @@
         layer.bindPopup(`<b>国道区間 #${feature.properties.id}</b><br>状況: ${status}<br><span style="color:#888;font-size:11px">${feature.properties.source}</span>`);
         layer.bindTooltip(status, { sticky: true, direction: 'top' });
       });
+
+      // バス運休路線レイヤー表示
+      if (busSuspendedData && busSuspendedData.features) {
+        busSuspendedData.features.forEach(feature => {
+          const props = feature.properties;
+          // 運休区間ライン（オレンジ破線）
+          const busLayer = L.geoJSON(feature, {
+            style: { color: '#f59e0b', weight: 6, opacity: 0.8, dashArray: '10, 8' },
+          }).addTo(map);
+
+          let popupHtml = `<div style="min-width:180px">`;
+          popupHtml += `<div style="font-size:13px;font-weight:bold;color:#f59e0b;margin-bottom:4px">🚌 ${props.name}</div>`;
+          popupHtml += `<div style="font-size:12px;margin-bottom:4px"><span style="background:#f59e0b;color:#fff;padding:1px 6px;border-radius:4px;font-size:11px">${props.status}</span></div>`;
+          popupHtml += `<div style="font-size:12px;margin-bottom:3px"><b>区間:</b> ${props.from_stop} ～ ${props.to_stop}</div>`;
+          if (props.detour_notice) {
+            popupHtml += `<div style="font-size:11px;color:#666;margin-bottom:3px">${props.detour_notice}</div>`;
+          }
+          // 停留所リスト
+          if (props.stops && props.stops.length > 0) {
+            popupHtml += `<div style="font-size:10px;color:#888;border-top:1px solid #eee;padding-top:4px;margin-top:4px">`;
+            popupHtml += `停留所: ${props.stops.map(s => s.name).join(' → ')}`;
+            popupHtml += `</div>`;
+          }
+          popupHtml += `</div>`;
+          busLayer.bindPopup(popupHtml);
+          busLayer.bindTooltip(`🚌 ${props.name}（${props.status}）`, { sticky: true, direction: 'top' });
+
+          // 停留所マーカー（小さなオレンジ丸）
+          if (props.stops) {
+            props.stops.forEach(stop => {
+              const icon = L.divIcon({
+                className: '',
+                html: '<div style="width:8px;height:8px;background:#f59e0b;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>',
+                iconSize: [8, 8],
+                iconAnchor: [4, 4],
+              });
+              L.marker([stop.lat, stop.lng], { icon: icon }).addTo(map)
+                .bindTooltip(stop.name, { direction: 'top', className: 'dump-tooltip' });
+            });
+          }
+        });
+      }
 
       buildSummary(kokuFeatures, rosenFeatures);
       showBusStatus();
