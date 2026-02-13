@@ -13,6 +13,7 @@
   <!-- Firebase SDK (v9 compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" integrity="sha384-ajMUFBUFMCyjh8uxJg6bkGcKe9RTolyjwbxB3yES0QQMenP3Oztj/W9vA2SJPcIh" crossorigin="anonymous"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js" integrity="sha384-f6/UpzjTjIXASlp20cArQsaRh1EvHVJd5kegy/gYR9W2D0a32TnEqUEiW4Zm/5O0" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" integrity="sha384-xD1t9dGSVKobUztxDkv6xUI0H4AnFz0NxwlgDJJ7FDlblG9xxr1Z9iauCZuJYj6p" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
   <style>
@@ -1930,12 +1931,20 @@
     };
 
     let sosDb = null;
+    let sosAuth = null;
+    let sosUid = null;
     let sosMarkers = {};  // id -> { marker, data }
     let mySosId = null;   // 自分が投稿したSOSのID（ブラウザセッション内）
 
     try {
       firebase.initializeApp(firebaseConfig);
       sosDb = firebase.database();
+      sosAuth = firebase.auth();
+      sosAuth.signInAnonymously().then(function(cred) {
+        sosUid = cred.user.uid;
+      }).catch(function(e) {
+        console.warn('匿名認証失敗:', e);
+      });
     } catch (e) {
       console.warn('Firebase初期化失敗:', e);
     }
@@ -1986,7 +1995,7 @@
           popupHtml += '<div style="font-size:11px;color:#888;margin-bottom:6px">⏱ ' + elapsedText + '</div>';
 
           // 自分のSOSなら「解決済み」ボタンを表示
-          if (id === mySosId) {
+          if (sos.uid && sos.uid === sosUid) {
             popupHtml += '<button class="sos-popup-resolve" onclick="resolveSos(\'' + id + '\')">✅ 解決済み（削除）</button>';
           }
 
@@ -2081,6 +2090,10 @@
 
     window.submitSos = function() {
       if (!sosDb || sosLat === null || sosLng === null) return;
+      if (!sosUid) {
+        alert('認証の準備中です。少し待ってから再度お試しください。');
+        return;
+      }
 
       const vehicle = document.getElementById('sos-vehicle').value;
       const situation = document.getElementById('sos-situation').value;
@@ -2097,6 +2110,7 @@
         type: situation,
         note: note || null,
         created_at: firebase.database.ServerValue.TIMESTAMP,
+        uid: sosUid,
       };
 
       const newRef = sosDb.ref('sos').push();
@@ -2129,7 +2143,12 @@
     };
 
     window.resolveSos = function(id) {
-      if (!sosDb) return;
+      if (!sosDb || !sosUid) return;
+      var entry = sosMarkers[id];
+      if (!entry || entry.data.uid !== sosUid) {
+        alert('自分の投稿のみ削除できます。');
+        return;
+      }
       if (!confirm('SOSを解決済みにしますか？地図から削除されます。')) return;
       sosDb.ref('sos/' + id).remove()
         .then(function() {
