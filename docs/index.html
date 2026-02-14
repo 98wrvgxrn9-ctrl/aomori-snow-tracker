@@ -958,6 +958,9 @@
     </div>
   </div>
 
+  <script src="js/face-score.js"></script>
+  <script src="js/road-condition-predict.js"></script>
+  <script src="js/road-condition-svg.js"></script>
   <script>
     // ステータス判定（部分一致）
     function classifyStatus(raw) {
@@ -999,6 +1002,7 @@
     let fmsCounts = {};      // FMS関心度（工区/路線名→レベル）
     let fmsRisk = {};        // FMSリスクデータ（工区名→{total, stuck_total, ...}）
     let prevSummary = null;  // 前日サマリー
+    let roadPredictions = {}; // 路面状況予測
     let busSuspendedData = null; // バス運休路線GeoJSON
     let busLayers = [];          // バス運休路線のLeafletレイヤー群
     let busLayersVisible = false; // バス路線表示状態
@@ -1064,16 +1068,25 @@
 
       // FMSリスク（直近7日間の市民報告）
       const risk = fmsRisk[props['名前']];
+      const operatorMoodArea = window.FaceScore ? window.FaceScore.getOperatorMoodForArea(props['名前'], xPostsData) : { available: false };
       if (risk && risk.total > 0) {
         const stuckLabel = risk.stuck_total > 0
           ? `<span style="color:#c0392b;font-weight:bold">⚠ ${risk.stuck_total}件</span>`
           : '<span style="color:#27ae60">0件</span>';
         const periodText = risk.days_since_snow != null ? `除雪${risk.days_since_snow}日前` : '直近7日間';
+        const areaFace = window.FaceScore ? window.FaceScore.getAreaFace(risk) : { available: false };
         html += `<div class="detail-row"><span class="label">市民報告(7日)</span><span class="value">${risk.total}件（${periodText}）</span></div>`;
         html += `<div class="detail-row"><span class="label">スタック関連</span><span class="value">${stuckLabel}</span></div>`;
+        if (areaFace.available) {
+          const confidence = areaFace.confidence === 'low' ? ' / 参考値' : '';
+          html += `<div class="detail-row"><span class="label">市民の表情</span><span class="value" style="color:${areaFace.color};font-weight:bold">${areaFace.emoji} ${areaFace.label}（${areaFace.scoreText}${confidence}）</span></div>`;
+        }
         if (risk.resolved > 0) {
           html += `<div class="detail-row"><span class="label">改善報告</span><span class="value" style="color:#27ae60">${risk.resolved}件</span></div>`;
         }
+      }
+      if (operatorMoodArea.available) {
+        html += `<div class="detail-row"><span class="label">除雪業者（この工区）</span><span class="value" style="color:${operatorMoodArea.color};font-weight:bold">${operatorMoodArea.emoji} ${operatorMoodArea.label}</span></div>`;
       }
 
       // 空間情報（メタデータ）
@@ -1090,6 +1103,12 @@
       }
 
       html += '</div>';
+
+      // 路面状況予測カード
+      const pred = roadPredictions[props['名前']];
+      if (pred && window.RoadSVG) {
+        html += window.RoadSVG.renderRoadConditionCard(pred);
+      }
 
       document.getElementById('selected-info').innerHTML = html;
       showXPosts(props['名前']);
@@ -1562,6 +1581,7 @@
       const rosenAreas = areas.filter(([, d]) => d.category === 'rosen');
       const stuckAreas = areas.filter(([, d]) => d.stuck_total > 0);
       const totalReports = areas.reduce((s, [, d]) => s + d.total, 0);
+      const operatorMood = window.FaceScore ? window.FaceScore.getOperatorMood(xPostsData) : { available: false };
 
       let html = '<div class="bus-section">';
       html += `<h4 style="cursor:pointer;user-select:none" onclick="document.getElementById('fms-risk-detail').style.display=document.getElementById('fms-risk-detail').style.display==='none'?'block':'none'">`;
@@ -1571,6 +1591,10 @@
       }
       html += ' <span style="font-size:11px;color:#888">▶</span></h4>';
       html += `<div style="font-size:10px;color:#aaa;margin-bottom:4px">工区${kokuAreas.length} / 路線${rosenAreas.length}　※解決済みも含む7日間の記録</div>`;
+      if (operatorMood.available) {
+        const confidence = operatorMood.confidence === 'low' ? '・参考値' : '';
+        html += `<div style="font-size:11px;margin-bottom:6px;color:${operatorMood.color};font-weight:bold">除雪業者ムード（全体）: ${operatorMood.emoji} ${operatorMood.label} <span style="font-weight:normal;color:#888">対象${operatorMood.total}件${confidence}</span></div>`;
+      }
       html += '<div id="fms-risk-detail" style="display:none">';
 
       function renderAreaCard(name, data) {
@@ -1580,14 +1604,23 @@
         const catLabel = data.category === 'koku' ? '工区' : '路線';
         const catColor = data.category === 'koku' ? '#1a3a5c' : '#6b7280';
         const snowText = data.days_since_snow != null ? `除雪${data.days_since_snow}日前` : '除雪日不明';
+        const face = window.FaceScore ? window.FaceScore.getAreaFace(data) : { available: false };
+        const operatorMoodLocal = window.FaceScore ? window.FaceScore.getOperatorMoodForArea(name, xPostsData) : { available: false };
+        const faceChip = face.available
+          ? `<span style="display:inline-block;background:${face.color};color:#fff;font-size:9px;border-radius:10px;padding:1px 6px;margin-left:6px">${face.emoji} ${face.scoreText}</span>`
+          : '';
 
         let card = `<div style="border:1px solid ${borderColor};border-radius:6px;padding:8px;margin-bottom:6px;cursor:pointer;${hasStuck ? 'background:#fef2f2' : ''}" onclick="selectAreaByName('${escapedName}')">`;
         card += `<div style="font-size:12px;font-weight:bold;color:${catColor};margin-bottom:3px">`;
         card += `<span style="font-size:9px;background:${catColor};color:#fff;padding:1px 5px;border-radius:4px;margin-right:4px">${catLabel}</span>`;
         card += name;
+        card += faceChip;
         card += `<span style="font-size:10px;color:#888;font-weight:normal;margin-left:6px">${snowText}</span>`;
         card += ' <span style="font-size:10px;color:#3498db">▶ 地図で見る</span>';
         card += '</div>';
+        if (operatorMoodLocal.available) {
+          card += `<div style="font-size:10px;color:${operatorMoodLocal.color};margin-bottom:3px">除雪業者: ${operatorMoodLocal.emoji} ${operatorMoodLocal.label}</div>`;
+        }
 
         const riskItems = [
           ['スタック', data.risk.stacked, '#c0392b'],
@@ -1743,6 +1776,11 @@
       loadBusStatus(),
       loadBusSuspended(),
     ]).then(([kokuFeatures, rosenFeatures]) => {
+      // 路面状況予測を計算
+      if (window.RoadPredict && fmsRisk) {
+        roadPredictions = window.RoadPredict.predictAllAreas(fmsRisk, areasMeta);
+      }
+
       const combined = [...kokuFeatures, ...rosenFeatures];
       allFeatures = combined;
 
