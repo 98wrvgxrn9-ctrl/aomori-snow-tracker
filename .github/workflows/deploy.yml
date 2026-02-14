@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: リポジトリをチェックアウト
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Firebase API キーを注入
         run: sed -i 's/__FIREBASE_API_KEY__/${{ secrets.FIREBASE_API_KEY }}/' docs/index.html
