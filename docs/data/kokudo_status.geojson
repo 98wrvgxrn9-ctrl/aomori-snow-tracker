@@ -1,1 +1,1 @@
-{"type": "FeatureCollection", "features": []}
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[140.58896, 40.72164], [140.58992, 40.72171], [140.5909, 40.72177], [140.59292, 40.7219], [140.59645, 40.72222], [140.60374, 40.72281], [140.60672, 40.72306]]}, "properties": {"id": "125", "status": "除雪済み", "color": "#16a085", "source": "国交省除雪管理システム"}}]}
