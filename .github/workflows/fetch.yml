@@ -51,10 +51,12 @@ jobs:
 
       - name: Notionにデータ同期
         if: ${{ env.NOTION_API_KEY != '' }}
+        continue-on-error: true
         run: python scripts/sync_notion.py
 
       - name: X自動投稿（差分がある場合のみ）
         if: ${{ env.X_API_KEY != '' && env.X_API_SECRET != '' && env.X_ACCESS_TOKEN != '' && env.X_ACCESS_TOKEN_SECRET != '' }}
+        continue-on-error: true
         run: python scripts/post_to_x.py
 
       - name: 変更をコミット・プッシュ
