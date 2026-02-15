@@ -840,12 +840,14 @@
         <li>個人が特定される情報は一切表示しません。</li>
       </ul>
 
-      <h3>8. データソース</h3>
+      <h3>8. データソース・引用元</h3>
+      <p style="font-size:13px;color:#555;margin-bottom:8px">本サービスは以下の情報を引用・利用しています。各データの著作権・利用条件は提供元に帰属します。</p>
       <ul>
-        <li>除排雪スケジュール: 青森市が公開するオープンデータ</li>
+        <li>除排雪スケジュール: <a href="https://www.city.aomori.aomori.jp/seikatsu/kurashi/seikatsu/yuki/index.html" target="_blank" rel="noopener">青森市 — 雪についてのお知らせ</a>（市が公開するオープンデータを引用）</li>
+        <li>雪捨て場情報: <a href="https://www.city.aomori.aomori.jp/" target="_blank" rel="noopener">青森市公式サイト</a>（公開情報を引用）</li>
+        <li>市民レポート（FMS）: <a href="https://www.fixmystreet.jp/" target="_blank" rel="noopener">FixMyStreet Japan</a>（公開投稿を統計化して引用。原文は各投稿ページをご参照ください）</li>
+        <li>市民体感（SNS）: X（旧Twitter）上の公開投稿を統計化（原文非公開・個人特定情報なし）</li>
         <li>地図タイル: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</li>
-        <li>市民体感: SNS公開投稿の統計化データ（原文非公開）</li>
-        <li>雪捨て場: 青森市公開情報</li>
       </ul>
 
       <h3>9. SOS機能について</h3>
@@ -940,7 +942,6 @@
           <strong>データの特性について：</strong>市の公開情報は「作業予定」と表記されていますが、更新タイミングの都合上、実際には前日分の作業報告に近い内容になっていることがあります。当日の最新予定として確定的に扱わず、目安としてご活用ください。
         </div>
         <div id="summary"></div>
-        <div id="x-unmatched"></div>
         <div id="fms-risk-panel"></div>
         <div id="selected-info"></div>
         <div id="x-posts-container"></div>
@@ -1198,50 +1199,6 @@
       container.innerHTML = html;
     }
 
-    // 全体の通行リスクサマリー（折りたたみ）
-    function showUnmatchedPosts() {
-      const container = document.getElementById('x-unmatched');
-      if (xPostsData.length === 0) { container.innerHTML = ''; return; }
-
-      const total = xPostsData.length;
-      const withArea = xPostsData.filter(p => p.area && p.area.length > 0).length;
-      const counts = countRisks(xPostsData);
-      const stuckTotal = (counts.stacked || 0) + (counts.near_stack || 0);
-      const resolvedCount = counts.resolved || 0;
-      const resolvedPct = total > 0 ? Math.round(resolvedCount / total * 100) : 0;
-
-      let html = '<div class="x-posts-section">';
-      html += '<div class="collapsible-header" onclick="toggleUnmatched()">';
-      html += `<h4 style="margin:0">通行リスク観測（${total}件）`;
-      if (stuckTotal > 0) html += ` <span style="background:#c0392b;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px">⚠${stuckTotal}</span>`;
-      html += '</h4>';
-      html += '<span class="toggle" id="unmatched-toggle">▼ 開く</span>';
-      html += '</div>';
-      html += '<div class="collapsible-body collapsed" id="unmatched-body">';
-
-      html += renderRiskBars(counts, total, 11);
-
-      html += '<div style="border-top:1px solid #eee;margin-top:6px;padding-top:6px;font-size:11px;color:#666">';
-      html += `改善シグナル率: <b style="color:#27ae60">${resolvedPct}%</b>（${resolvedCount}/${total}件）`;
-      html += `<br>エリア特定率: ${Math.round(withArea / total * 100)}%（${withArea}/${total}件）`;
-      html += '</div>';
-
-      html += '<div style="font-size:10px;color:#aaa;margin-top:4px">SNS投稿を統計化。原文は公開していません。</div>';
-      html += '</div></div>';
-      container.innerHTML = html;
-    }
-
-    window.toggleUnmatched = function() {
-      const body = document.getElementById('unmatched-body');
-      const toggle = document.getElementById('unmatched-toggle');
-      if (body.classList.contains('collapsed')) {
-        body.classList.remove('collapsed');
-        toggle.textContent = '▲ 閉じる';
-      } else {
-        body.classList.add('collapsed');
-        toggle.textContent = '▼ 開く';
-      }
-    };
 
     // フィーチャークリック
     function onFeatureClick(e) {
@@ -1909,7 +1866,6 @@
 
       buildSummary(kokuFeatures, rosenFeatures);
       showBusStatus();
-      showUnmatchedPosts();
       showFmsRiskPanel();
 
       // 全体表示
