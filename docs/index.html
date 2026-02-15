@@ -769,7 +769,7 @@
         </div>
         <div class="feature-card">
           <h4>直近7日間の傾向分析</h4>
-          <p>市民投稿は直近7日間のスライディングウィンドウで集計し、変化を継続観測します。</p>
+          <p>市民投稿（FMS）は直近7日間分を集計し、毎日更新されます。古い投稿は自動的に入れ替わります。</p>
         </div>
         <div class="feature-card">
           <h4>行動に必要な生活情報</h4>
@@ -1547,7 +1547,7 @@
         html += ` <span style="background:#c0392b;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px">⚠${stuckAreas.length}</span>`;
       }
       html += ' <span style="font-size:11px;color:#888">▶</span></h4>';
-      html += `<div style="font-size:10px;color:#aaa;margin-bottom:4px">工区${kokuAreas.length} / 路線${rosenAreas.length}　※解決済みも含む7日間の記録</div>`;
+      html += `<div style="font-size:10px;color:#aaa;margin-bottom:4px">工区${kokuAreas.length} / 路線${rosenAreas.length}　※直近7日間を毎日更新（古い投稿は自動で入れ替わります）</div>`;
       if (operatorMood.available) {
         const confidence = operatorMood.confidence === 'low' ? '・参考値' : '';
         html += `<div style="font-size:11px;margin-bottom:6px;color:${operatorMood.color};font-weight:bold">除雪業者ムード（全体）: ${operatorMood.emoji} ${operatorMood.label} <span style="font-weight:normal;color:#888">対象${operatorMood.total}件${confidence}</span></div>`;
