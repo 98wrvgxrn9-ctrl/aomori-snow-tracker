@@ -7,12 +7,13 @@ import math
 import os
 import re
 import unicodedata
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
-from urllib.request import urlopen, Request
 
 SCRIPT_DIR = os.path.dirname(__file__)
+
+# Google Spreadsheet (FMS通知記録)
+FMS_SPREADSHEET_ID = "148iiDmslhzgn65nQCZG9Lk3Dobr7pEzkjBqcIK92aq0"
 FMS_CSV_CANDIDATES = [
     os.environ.get("FMS_CSV_PATH", ""),
     os.path.join(SCRIPT_DIR, "..", "data", "processed", "fms",
@@ -126,51 +127,52 @@ def resolve_fms_csv():
     return None
 
 
-def fetch_coords_from_url(url):
-    """FMSの投稿ページHTMLから座標を抽出する。返り値は (lat, lng) or None。"""
+def fetch_fms_from_spreadsheet():
+    """Google SpreadsheetからFMS投稿データを読み取る。返り値は dict のリスト or None。"""
+    creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+    if not creds_json:
+        return None
+
     try:
-        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urlopen(req, timeout=10) as resp:
-            html = resp.read().decode("utf-8", errors="ignore")
-        # lat,lng のペアを探す（日本の座標範囲）
-        pairs = re.findall(
-            r"((?:3[5-9]|4[0-5])\.\d{5,})\D+(1[2-4][0-9]\.\d{5,})", html
+        import gspread
+        from google.oauth2.service_account import Credentials
+    except ImportError:
+        print("gspread/google-auth未インストール。スプシ読み取りスキップ。")
+        return None
+
+    try:
+        creds_data = json.loads(creds_json)
+        creds = Credentials.from_service_account_info(
+            creds_data,
+            scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
         )
-        if pairs:
-            return (float(pairs[0][0]), float(pairs[0][1]))
-    except Exception:
-        pass
-    return None
+        client = gspread.authorize(creds)
+        sheet = client.open_by_key(FMS_SPREADSHEET_ID).sheet1
+        rows = sheet.get_all_records()
+        print(f"スプシから{len(rows)}件取得")
 
-
-def backfill_coordinates(posts, max_workers=20):
-    """座標が空の投稿のURLからHTMLを取得して座標を補完する。"""
-    needs_coords = [(i, row) for i, row in enumerate(posts)
-                    if not row.get("latitude", "").strip() or not row.get("longitude", "").strip()]
-    if not needs_coords:
-        return 0
-
-    print(f"座標補完: {len(needs_coords)}件のURLから座標を取得中...")
-    filled = 0
-
-    def _fetch(idx_row):
-        idx, row = idx_row
-        url = row.get("link", "").strip() or row.get("guid", "").strip()
-        if not url:
-            return idx, None
-        return idx, fetch_coords_from_url(url)
-
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(_fetch, item): item for item in needs_coords}
-        for future in as_completed(futures):
-            idx, coords = future.result()
-            if coords:
-                posts[idx]["latitude"] = str(coords[0])
-                posts[idx]["longitude"] = str(coords[1])
-                filled += 1
-
-    print(f"座標補完完了: {filled}/{len(needs_coords)}件成功")
-    return filled
+        # スプシのカラム名をgen_fms_risk.pyの期待する形式に変換
+        posts = []
+        for row in rows:
+            status = str(row.get("status", ""))
+            if status == "削除済み":
+                continue
+            lat = str(row.get("latitude", "")).strip()
+            lng = str(row.get("longtitude", row.get("longitude", ""))).strip()
+            if not lat or not lng:
+                continue
+            posts.append({
+                "pub_date": str(row.get("received_at", "")),
+                "title": str(row.get("subject", "")),
+                "description": "",
+                "latitude": lat,
+                "longitude": lng,
+                "link": str(row.get("report_url", "")),
+            })
+        return posts
+    except Exception as e:
+        print(f"スプシ読み取りエラー: {e}")
+        return None
 
 
 def aggregate_risk(posts):
@@ -229,42 +231,51 @@ def main():
         rosen_coords[name].extend(coords)
 
     # --- FMS投稿読み込み（直近7日間のみ） ---
-    fms_csv_path = resolve_fms_csv()
-    if not fms_csv_path:
-        print(f"FMS CSVが見つかりません。探索パス:")
-        for p in FMS_CSV_CANDIDATES:
-            if p:
-                print(f"  - {p}")
-        print("既存のfms_risk.jsonを維持します。")
+    # 優先順位: 1. スプシ  2. ローカルCSV
+    fms_rows = None
+    source_label = ""
+
+    spreadsheet_posts = fetch_fms_from_spreadsheet()
+    if spreadsheet_posts:
+        fms_rows = spreadsheet_posts
+        source_label = "スプシ"
+    else:
+        fms_csv_path = resolve_fms_csv()
+        if fms_csv_path:
+            print(f"FMS CSV: {fms_csv_path}")
+            with open(fms_csv_path, encoding="utf-8-sig") as f:
+                fms_rows = list(csv.DictReader(f))
+            source_label = "CSV"
+
+    if not fms_rows:
+        print("FMSデータが見つかりません。既存のfms_risk.jsonを維持します。")
         return
 
-    print(f"FMS CSV: {fms_csv_path}")
-
-    with open(fms_csv_path, encoding="utf-8-sig") as f:
-        fms_rows = list(csv.DictReader(f))
+    def parse_pub_date(s):
+        """複数の日付形式に対応"""
+        s = str(s).strip()
+        if not s:
+            return None
+        # ISO形式 "2026-02-10" or "2026-02-10 12:34:56"
+        try:
+            return datetime.strptime(s[:10], "%Y-%m-%d")
+        except ValueError:
+            pass
+        # RFC 2822形式 "Thu, 25 Dec 2025 03:45:18 GMT"
+        try:
+            return parsedate_to_datetime(s).replace(tzinfo=None)
+        except (ValueError, TypeError):
+            pass
+        return None
 
     recent_posts = []
     for row in fms_rows:
-        pub_date_str = row.get("pub_date", "")
-        try:
-            # ISO形式 "2026-02-10" を試す
-            pub_date = datetime.strptime(pub_date_str[:10], "%Y-%m-%d")
-        except ValueError:
-            try:
-                # RFC 2822形式 "Thu, 25 Dec 2025 03:45:18 GMT" を試す
-                pub_date = parsedate_to_datetime(pub_date_str).replace(tzinfo=None)
-            except (ValueError, TypeError):
-                continue
-        if pub_date >= period_start:
+        pub_date = parse_pub_date(row.get("pub_date", ""))
+        if pub_date and pub_date >= period_start:
             recent_posts.append(row)
 
-    print(f"FMS全投稿: {len(fms_rows)}件")
+    print(f"FMSソース: {source_label} ({len(fms_rows)}件)")
     print(f"直近{PERIOD_DAYS}日間: {len(recent_posts)}件")
-
-    # 座標が空の投稿があればURLから補完
-    if recent_posts:
-        backfill_coordinates(recent_posts)
-
     print(f"工区数: {len(koku_info)}, 路線数: {len(rosen_coords)}")
 
     # --- 工区集計 ---
