@@ -8,6 +8,7 @@ import os
 import re
 import unicodedata
 from datetime import datetime, timedelta
+from email.utils import parsedate_to_datetime
 
 SCRIPT_DIR = os.path.dirname(__file__)
 FMS_CSV_CANDIDATES = [
@@ -193,11 +194,16 @@ def main():
 
     recent_posts = []
     for row in fms_rows:
-        pub_date_str = row.get("pub_date", "")[:10]
+        pub_date_str = row.get("pub_date", "")
         try:
-            pub_date = datetime.strptime(pub_date_str, "%Y-%m-%d")
+            # ISO形式 "2026-02-10" を試す
+            pub_date = datetime.strptime(pub_date_str[:10], "%Y-%m-%d")
         except ValueError:
-            continue
+            try:
+                # RFC 2822形式 "Thu, 25 Dec 2025 03:45:18 GMT" を試す
+                pub_date = parsedate_to_datetime(pub_date_str).replace(tzinfo=None)
+            except (ValueError, TypeError):
+                continue
         if pub_date >= period_start:
             recent_posts.append(row)
 
