@@ -1479,8 +1479,9 @@
     const kokudoLayer = L.layerGroup();
     const busLayer = L.layerGroup();
     const supportLayer = L.layerGroup();
-    const layerVisibility = { dump: true, ryusetsuko: true, kokudo: true, bus: false, support: true };
-    const layerGroupMap = { dump: dumpSiteLayer, ryusetsuko: ryusetsukoLayer, kokudo: kokudoLayer, bus: busLayer, support: supportLayer };
+    const kokuLayer = L.layerGroup();
+    const layerVisibility = { koku: true, dump: true, ryusetsuko: true, kokudo: true, bus: false, support: true };
+    const layerGroupMap = { koku: kokuLayer, dump: dumpSiteLayer, ryusetsuko: ryusetsukoLayer, kokudo: kokudoLayer, bus: busLayer, support: supportLayer };
     const FEATURE_VIDEO_URL = ''; // 例: 'https://www.youtube.com/embed/xxxxxxxxxxx'
 
     // ビュー管理
@@ -1904,7 +1905,7 @@
     }
 
     function styleFeature(feature) {
-      return neutralStyle(feature);
+      return coloredStyle(feature);
     }
 
     function highlightStyle(feature) {
@@ -2306,6 +2307,10 @@
         });
         // active解除
         document.querySelectorAll('.summary-item.active').forEach(el => el.classList.remove('active'));
+        // 応援除雪レイヤーを復帰
+        if (layerVisibility.support && !map.hasLayer(supportLayer)) {
+          supportLayer.addTo(map);
+        }
         return;
       }
 
@@ -2359,6 +2364,11 @@
           layer.setStyle({ color: '#ccc', weight: 0.5, opacity: 0.15, fillOpacity: 0.03 });
         }
       });
+
+      // 応援除雪レイヤーを非表示（工区フィルター中は邪魔になる）
+      if (map.hasLayer(supportLayer)) {
+        map.removeLayer(supportLayer);
+      }
     };
 
     window.toggleAreaList = function() {
@@ -2392,7 +2402,7 @@
       }
 
       // 他レイヤーを表示状態に復帰
-      ['dump', 'ryusetsuko', 'kokudo', 'support'].forEach(key => {
+      ['koku', 'dump', 'ryusetsuko', 'kokudo', 'support'].forEach(key => {
         if (!layerVisibility[key]) {
           layerVisibility[key] = true;
           layerGroupMap[key].addTo(map);
@@ -2453,10 +2463,19 @@
         html += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
         html += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済</div>';
       }
+      // 工区除雪状況
+      if (layerVisibility.koku) {
+        html += '<div class="legend-section">工区除雪状況</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#e74c3c"></span>作業予定あり</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#3498db"></span>現場確認中</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#e67e22"></span>日程調整中</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#95a5a6"></span>その他</div>';
+      }
       // 応援除雪（support）
       if (layerVisibility.support) {
-        html += '<div class="legend-section">応援除雪</div>';
+        html += '<div class="legend-section">応援除雪(県)</div>';
         html += '<div class="legend-item"><span class="legend-color" style="background:#2e7d32"></span>作業予定</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#78909c"></span>作業終了</div>';
       }
       legendDiv.innerHTML = html || '<span style="color:#aaa">凡例なし</span>';
     }
@@ -2473,6 +2492,7 @@
       html += '<div class="layer-control-body" id="panel-lc-body">';
 
       const layers = [
+        { key: 'koku', label: '工区除雪状況', icon: '<span style="display:inline-block;width:14px;height:14px;background:#e74c3c;opacity:0.5;border:1px solid #e74c3c;border-radius:2px"></span>' },
         { key: 'dump', label: '雪捨て場', icon: '<span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px">&#10052;</span>' },
         { key: 'ryusetsuko', label: '流雪溝施設', icon: '<span style="background:#3498db;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px">💧</span>' },
         { key: 'kokudo', label: '国道除雪状況', icon: '<span style="display:inline-block;width:14px;height:4px;background:#f1c40f;border-radius:2px"></span>' },
@@ -2840,7 +2860,7 @@
             });
             lyr.on('click', onFeatureClick);
           }
-        }).addTo(map);
+        }).addTo(kokuLayer);
 
         // geoJSONレイヤーの最初の子レイヤーを取得
         const innerLayer = layer.getLayers()[0];
@@ -2868,10 +2888,11 @@
                 iconSize: null,
               }),
               interactive: false,
-            }).addTo(map);
+            }).addTo(kokuLayer);
           }
         }
       });
+      if (layerVisibility.koku) kokuLayer.addTo(map);
 
       // 雪捨て場マーカー表示
       dumpSiteLayer.clearLayers();
@@ -2994,19 +3015,22 @@
       }
       // バスは初期非表示（layerVisibility.bus = false）
 
-      // 応援除雪工区レイヤー表示
+      // 応援除雪工区レイヤー表示（作業予定・作業終了のみ）
       supportLayer.clearLayers();
       supportZones.forEach(feature => {
         const props = feature.properties;
-        const status = props.status || '未定';
-        let fillColor = '#ccc';
-        let fillOpacity = 0.08;
-        let weight = 0.5;
-        if (status === '作業予定') { fillColor = '#2e7d32'; fillOpacity = 0.35; weight = 2; }
-        else if (status === '作業終了') { fillColor = '#ccc'; fillOpacity = 0.08; }
-        else { fillColor = '#ccc'; fillOpacity = 0.08; }
+        const status = props.status || '';
+        if (status === '未定' || !status) return; // 対象外は非表示
+        let fillColor, fillOpacity, weight, borderColor;
+        if (status === '作業予定') {
+          fillColor = '#2e7d32'; fillOpacity = 0.35; weight = 2; borderColor = '#2e7d32';
+        } else if (status === '作業終了') {
+          fillColor = '#78909c'; fillOpacity = 0.2; weight = 1.5; borderColor = '#78909c';
+        } else {
+          return;
+        }
         const lyr = L.geoJSON(feature, {
-          style: { color: fillColor, weight: weight, fillColor: fillColor, fillOpacity: fillOpacity },
+          style: { color: borderColor, weight: weight, fillColor: fillColor, fillOpacity: fillOpacity },
           interactive: false,
         });
         supportLayer.addLayer(lyr);
