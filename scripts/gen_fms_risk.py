@@ -141,24 +141,33 @@ def fetch_fms_from_spreadsheet():
         return None
 
     try:
+        # デバッグ: 環境変数の先頭と構造を確認
+        print(f"creds_json length: {len(creds_json)}")
+        print(f"creds_json[:80]: {repr(creds_json[:80])}")
+        print(f"creds_json has newlines: {chr(10) in creds_json}")
+        print(f"creds_json has literal backslash-n: {'\\\\n' in repr(creds_json)}")
+
         # GitHub Secrets 経由の JSON は private_key 内のエスケープが崩れることがある
-        # 複数のパース方法を試す
         creds_data = None
-        for attempt, src in enumerate([
-            creds_json,
-            creds_json.replace("\n", "\\n"),  # 実改行→エスケープに戻す
-        ]):
+        errors = []
+        for label, src in [
+            ("raw", creds_json),
+            ("newline→escaped", creds_json.replace("\n", "\\n")),
+            ("raw+strict=False", creds_json),
+            ("escaped+strict=False", creds_json.replace("\n", "\\n")),
+        ]:
             try:
-                creds_data = json.loads(src)
+                strict = "strict=False" not in label
+                creds_data = json.loads(src, strict=strict)
+                print(f"JSON解析成功: {label}")
                 break
-            except json.JSONDecodeError:
-                try:
-                    creds_data = json.loads(src, strict=False)
-                    break
-                except json.JSONDecodeError:
-                    continue
+            except json.JSONDecodeError as e:
+                errors.append(f"{label}: {e}")
+                continue
         if creds_data is None:
-            print("GOOGLE_CREDENTIALS_JSONのパースに失敗")
+            print("GOOGLE_CREDENTIALS_JSONのパースに失敗:")
+            for err in errors:
+                print(f"  {err}")
             return None
         creds = Credentials.from_service_account_info(
             creds_data,
