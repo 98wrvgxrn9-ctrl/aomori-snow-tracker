@@ -141,11 +141,16 @@ def fetch_fms_from_spreadsheet():
         return None
 
     try:
-        # GitHub Secrets 経由では private_key 内の \n が「\ + 実改行」に分割される
-        # 1. \+改行 → \n に復元  2. 残りの実改行（フォーマット用）を除去
-        fixed = creds_json.replace("\\\n", "\\n").replace("\\\r\n", "\\n")
+        # GitHub Secrets 経由では private_key 内の \n が分割されることがある
+        # 1. \+改行 → \n に復元  2. 残りの実改行を除去  3. PEMタグを修正
+        fixed = creds_json.replace("\\\r\n", "\\n").replace("\\\n", "\\n")
         fixed = fixed.replace("\r", "").replace("\n", "")
         creds_data = json.loads(fixed)
+        # 改行除去でPEMタグにスペースが混入する場合の修正
+        pk = creds_data.get("private_key", "")
+        pk = re.sub(r"-----BEGIN\s+PRIVATE\s+KEY-----", "-----BEGIN PRIVATE KEY-----", pk)
+        pk = re.sub(r"-----END\s+PRIVATE\s+KEY-----", "-----END PRIVATE KEY-----", pk)
+        creds_data["private_key"] = pk
         creds = Credentials.from_service_account_info(
             creds_data,
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
