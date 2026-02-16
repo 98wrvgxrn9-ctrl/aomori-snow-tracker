@@ -251,18 +251,41 @@
     /* 凡例 */
     .legend {
       background: #fff;
-      padding: 8px 12px;
+      padding: 0;
       border-radius: 6px;
       box-shadow: 0 1px 5px rgba(0,0,0,0.3);
       font-size: 11px;
       line-height: 1.8;
     }
-    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-toggle {
+      display: block;
+      width: 100%;
+      background: #fff;
+      border: none;
+      padding: 5px 10px;
+      font-size: 10px;
+      font-weight: bold;
+      color: #555;
+      cursor: pointer;
+      border-radius: 6px;
+      text-align: left;
+    }
+    .legend-toggle:hover { background: #f5f5f5; }
+    .legend-body {
+      padding: 4px 10px 6px;
+      border-top: 1px solid #eee;
+    }
+    .legend-body.collapsed { display: none; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; }
     .legend-color {
-      width: 14px; height: 10px;
+      width: 12px; height: 8px;
       border: 1px solid #999;
       border-radius: 2px;
       flex-shrink: 0;
+    }
+    @media (max-width: 768px) {
+      .legend { max-width: 140px; }
+      .legend-body { display: none; }
     }
 
     /* X投稿カード */
@@ -2404,19 +2427,24 @@
     const legend = L.control({ position: 'bottomleft' });
     legend.onAdd = function() {
       const div = L.DomUtil.create('div', 'legend');
-      div.innerHTML += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#dc2626"></span> バス運休区間 <span style="font-size:9px;color:#aaa">※下部で表示</span></div>';
-      div.innerHTML += '<div class="legend-item"><span style="display:inline-block;width:14px;height:14px;background:#dc2626;border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px rgba(220,38,38,0.6);flex-shrink:0"></span> SOS発信中</div>';
-      div.innerHTML += '<div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:10px;color:#888">流雪溝施設</div>';
-      div.innerHTML += '<div class="legend-item"><span style="background:#3498db;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0">💧</span> ポンプ場（送水・中継）</div>';
-      div.innerHTML += '<div class="legend-item"><span style="background:#e67e22;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0">🔽</span> 排水施設</div>';
-      div.innerHTML += '<div class="legend-item"><span style="background:#9b59b6;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0">🔼</span> 取水施設</div>';
-      div.innerHTML += '<div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:10px;color:#888">国道（国交省）</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済み</div>';
-      div.innerHTML += '<div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:10px;color:#888">応援除雪（県支援）</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#2e7d32"></span>作業予定</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#ccc"></span>未定・作業終了</div>';
+      L.DomEvent.disableClickPropagation(div);
+      var html = '<button class="legend-toggle" onclick="this.nextElementSibling.classList.toggle(\'collapsed\')">凡例 ▾</button>';
+      html += '<div class="legend-body">';
+      html += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:12px;height:12px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
+      html += '<div class="legend-item"><span class="legend-color" style="background:#dc2626"></span> バス運休区間</div>';
+      html += '<div class="legend-item"><span style="display:inline-block;width:12px;height:12px;background:#dc2626;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(220,38,38,0.6);flex-shrink:0"></span> SOS</div>';
+      html += '<div style="border-top:1px solid #eee;margin:3px 0;padding-top:3px;font-size:9px;color:#aaa">流雪溝</div>';
+      html += '<div class="legend-item"><span style="background:#3498db;color:#fff;width:12px;height:12px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">💧</span> ポンプ場</div>';
+      html += '<div class="legend-item"><span style="background:#e67e22;color:#fff;width:12px;height:12px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">🔽</span> 排水</div>';
+      html += '<div class="legend-item"><span style="background:#9b59b6;color:#fff;width:12px;height:12px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">🔼</span> 取水</div>';
+      html += '<div style="border-top:1px solid #eee;margin:3px 0;padding-top:3px;font-size:9px;color:#aaa">国道</div>';
+      html += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
+      html += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済み</div>';
+      html += '<div style="border-top:1px solid #eee;margin:3px 0;padding-top:3px;font-size:9px;color:#aaa">応援除雪（県）</div>';
+      html += '<div class="legend-item"><span class="legend-color" style="background:#2e7d32"></span>作業予定</div>';
+      html += '<div class="legend-item"><span class="legend-color" style="background:#ccc"></span>未定・終了</div>';
+      html += '</div>';
+      div.innerHTML = html;
       return div;
     };
     legend.addTo(map);
