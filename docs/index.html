@@ -2469,7 +2469,7 @@
       function renderAreaCard(name, data) {
         const hasStuck = data.stuck_total > 0;
         const borderColor = hasStuck ? '#c0392b' : '#e5e7eb';
-        const escapedName = name.replace(/'/g, "\\'");
+        const safeNameAttr = name.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
         const catLabel = data.category === 'koku' ? '工区' : '路線';
         const catColor = data.category === 'koku' ? '#1a3a5c' : '#6b7280';
         const snowText = data.days_since_snow != null ? `除雪${data.days_since_snow}日前` : '除雪日不明';
@@ -2479,7 +2479,7 @@
           ? `<span style="display:inline-block;background:${face.color};color:#fff;font-size:9px;border-radius:10px;padding:1px 6px;margin-left:6px">${face.emoji} ${face.scoreText}</span>`
           : '';
 
-        let card = `<div style="border:1px solid ${borderColor};border-radius:6px;padding:8px;margin-bottom:6px;cursor:pointer;${hasStuck ? 'background:#fef2f2' : ''}" onclick="selectAreaByName('${escapedName}')">`;
+        let card = `<div style="border:1px solid ${borderColor};border-radius:6px;padding:8px;margin-bottom:6px;cursor:pointer;${hasStuck ? 'background:#fef2f2' : ''}" data-area="${safeNameAttr}" onclick="selectAreaByName(this.dataset.area)">`;
         card += `<div style="font-size:12px;font-weight:bold;color:${catColor};margin-bottom:3px">`;
         card += `<span style="font-size:9px;background:${catColor};color:#fff;padding:1px 5px;border-radius:4px;margin-right:4px">${catLabel}</span>`;
         card += name;
