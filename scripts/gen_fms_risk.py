@@ -141,35 +141,10 @@ def fetch_fms_from_spreadsheet():
         return None
 
     try:
-        # デバッグ: 環境変数の先頭と構造を確認
-        print(f"creds_json length: {len(creds_json)}")
-        print(f"creds_json[:80]: {repr(creds_json[:80])}")
-        print(f"creds_json has newlines: {chr(10) in creds_json}")
-        has_lit_bsn = "\\n" in creds_json
-        print(f"creds_json has literal backslash-n: {has_lit_bsn}")
-
-        # GitHub Secrets 経由の JSON は private_key 内のエスケープが崩れることがある
-        creds_data = None
-        errors = []
-        for label, src in [
-            ("raw", creds_json),
-            ("newline→escaped", creds_json.replace("\n", "\\n")),
-            ("raw+strict=False", creds_json),
-            ("escaped+strict=False", creds_json.replace("\n", "\\n")),
-        ]:
-            try:
-                strict = "strict=False" not in label
-                creds_data = json.loads(src, strict=strict)
-                print(f"JSON解析成功: {label}")
-                break
-            except json.JSONDecodeError as e:
-                errors.append(f"{label}: {e}")
-                continue
-        if creds_data is None:
-            print("GOOGLE_CREDENTIALS_JSONのパースに失敗:")
-            for err in errors:
-                print(f"  {err}")
-            return None
+        # GitHub Secrets 経由では private_key 内の \n が実改行に変換されることがある
+        # 実改行を除去して1行JSONにすることで安全にパース
+        creds_oneline = creds_json.replace("\r", "").replace("\n", "")
+        creds_data = json.loads(creds_oneline)
         creds = Credentials.from_service_account_info(
             creds_data,
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
