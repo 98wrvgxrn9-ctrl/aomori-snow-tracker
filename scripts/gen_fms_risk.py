@@ -141,11 +141,8 @@ def fetch_fms_from_spreadsheet():
         return None
 
     try:
-        # GitHub Secretsでは改行が\\nとしてエスケープされることがある
-        try:
-            creds_data = json.loads(creds_json)
-        except json.JSONDecodeError:
-            creds_data = json.loads(creds_json.replace("\\n", "\n"))
+        # GitHub Secretsでは private_key 内の \n が実際の改行になることがある
+        creds_data = json.loads(creds_json, strict=False)
         creds = Credentials.from_service_account_info(
             creds_data,
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
