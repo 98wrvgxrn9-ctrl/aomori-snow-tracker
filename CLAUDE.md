@@ -10,7 +10,7 @@
 
 - `fms-data` — FMS(FixMyStreet)投稿をRSSで取得・蓄積。`scripts/fetch_rss.py` が本体
 - `fms-workspace` / `fms-analysis` — FMS分析用
-- `fms-aomori-history` — 旧desktop-tutorial。除雪RPG（index.html）や流雪溝ジオコーディングスクリプトが入っている
+- `fms-aomori-history` — 除雪RPG（index.html）や流雪溝ジオコーディングスクリプトが入っている（※旧desktop-tutorialリポは削除済み）
 
 ## デプロイ
 
