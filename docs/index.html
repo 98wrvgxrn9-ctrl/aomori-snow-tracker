@@ -1889,8 +1889,8 @@
       html += '</div>';
 
       // 共有ボタン
-      const escapedNameForShare = (props['名前'] || '').replace(/'/g, "\\'");
-      html += `<button class="share-btn" onclick="shareArea('${escapedNameForShare}')">𝕏 Xで共有</button>`;
+      const nameForShare = (props['名前'] || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+      html += `<button class="share-btn" data-area="${nameForShare}" onclick="shareArea(this.dataset.area)">𝕏 Xで共有</button>`;
 
       // 路面状況予測カード
       const pred = roadPredictions[props['名前']];
