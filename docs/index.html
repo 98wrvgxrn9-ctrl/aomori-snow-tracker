@@ -250,43 +250,21 @@
 
     /* 凡例 */
     .legend {
-      background: #fff;
-      padding: 0;
-      border-radius: 6px;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.3);
-      font-size: 11px;
-      line-height: 1.8;
+      background: rgba(255,255,255,0.9);
+      padding: 4px 7px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      font-size: 9px;
+      line-height: 1.6;
     }
-    .legend-toggle {
-      display: block;
-      width: 100%;
-      background: #fff;
-      border: none;
-      padding: 5px 10px;
-      font-size: 10px;
-      font-weight: bold;
-      color: #555;
-      cursor: pointer;
-      border-radius: 6px;
-      text-align: left;
-    }
-    .legend-toggle:hover { background: #f5f5f5; }
-    .legend-body {
-      padding: 4px 10px 6px;
-      border-top: 1px solid #eee;
-    }
-    .legend-body.collapsed { display: none; }
-    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 4px; }
     .legend-color {
-      width: 12px; height: 8px;
+      width: 10px; height: 6px;
       border: 1px solid #999;
-      border-radius: 2px;
+      border-radius: 1px;
       flex-shrink: 0;
     }
-    @media (max-width: 768px) {
-      .legend { max-width: 140px; }
-      .legend-body { display: none; }
-    }
+    .legend-section { border-top: 1px solid #eee; margin: 2px 0; padding-top: 2px; font-size: 8px; color: #aaa; }
 
     /* X投稿カード */
     .x-posts-section {
@@ -2425,28 +2403,44 @@
 
     // 凡例
     const legend = L.control({ position: 'bottomleft' });
+    var legendDiv = null;
     legend.onAdd = function() {
-      const div = L.DomUtil.create('div', 'legend');
-      L.DomEvent.disableClickPropagation(div);
-      var html = '<button class="legend-toggle" onclick="this.nextElementSibling.classList.toggle(\'collapsed\')">凡例 ▾</button>';
-      html += '<div class="legend-body">';
-      html += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:12px;height:12px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
-      html += '<div class="legend-item"><span class="legend-color" style="background:#dc2626"></span> バス運休区間</div>';
-      html += '<div class="legend-item"><span style="display:inline-block;width:12px;height:12px;background:#dc2626;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(220,38,38,0.6);flex-shrink:0"></span> SOS</div>';
-      html += '<div style="border-top:1px solid #eee;margin:3px 0;padding-top:3px;font-size:9px;color:#aaa">流雪溝</div>';
-      html += '<div class="legend-item"><span style="background:#3498db;color:#fff;width:12px;height:12px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">💧</span> ポンプ場</div>';
-      html += '<div class="legend-item"><span style="background:#e67e22;color:#fff;width:12px;height:12px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">🔽</span> 排水</div>';
-      html += '<div class="legend-item"><span style="background:#9b59b6;color:#fff;width:12px;height:12px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">🔼</span> 取水</div>';
-      html += '<div style="border-top:1px solid #eee;margin:3px 0;padding-top:3px;font-size:9px;color:#aaa">国道</div>';
-      html += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
-      html += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済み</div>';
-      html += '<div style="border-top:1px solid #eee;margin:3px 0;padding-top:3px;font-size:9px;color:#aaa">応援除雪（県）</div>';
-      html += '<div class="legend-item"><span class="legend-color" style="background:#2e7d32"></span>作業予定</div>';
-      html += '<div class="legend-item"><span class="legend-color" style="background:#ccc"></span>未定・終了</div>';
-      html += '</div>';
-      div.innerHTML = html;
-      return div;
+      legendDiv = L.DomUtil.create('div', 'legend');
+      L.DomEvent.disableClickPropagation(legendDiv);
+      updateLegend();
+      return legendDiv;
     };
+    function updateLegend() {
+      if (!legendDiv) return;
+      var html = '';
+      // 雪捨て場（dump）
+      if (layerVisibility.dump) {
+        html += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:10px;height:10px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
+      }
+      // バス運休（bus）
+      if (layerVisibility.bus) {
+        html += '<div class="legend-item"><span class="legend-color" style="background:#dc2626"></span> バス運休</div>';
+      }
+      // 流雪溝（ryusetsuko）
+      if (layerVisibility.ryusetsuko) {
+        html += '<div class="legend-section">流雪溝</div>';
+        html += '<div class="legend-item"><span style="background:#3498db;color:#fff;width:10px;height:10px;border-radius:50%;font-size:6px;flex-shrink:0"></span> ポンプ場</div>';
+        html += '<div class="legend-item"><span style="background:#e67e22;width:10px;height:10px;border-radius:50%;flex-shrink:0"></span> 排水</div>';
+        html += '<div class="legend-item"><span style="background:#9b59b6;width:10px;height:10px;border-radius:50%;flex-shrink:0"></span> 取水</div>';
+      }
+      // 国道（kokudo）
+      if (layerVisibility.kokudo) {
+        html += '<div class="legend-section">国道</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済</div>';
+      }
+      // 応援除雪（support）
+      if (layerVisibility.support) {
+        html += '<div class="legend-section">応援除雪</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#2e7d32"></span>作業予定</div>';
+      }
+      legendDiv.innerHTML = html || '<span style="color:#aaa">凡例なし</span>';
+    }
     legend.addTo(map);
 
     // レイヤーコントロール（パネル内に配置）
@@ -2497,8 +2491,9 @@
       } else {
         map.removeLayer(group);
       }
-      // チェックボックスを同期
+      // チェックボックス・凡例を同期
       updateToggleCheckbox(key);
+      updateLegend();
       // バスの場合はパネルボタンも同期
       if (key === 'bus') {
         busLayersVisible = layerVisibility.bus;
