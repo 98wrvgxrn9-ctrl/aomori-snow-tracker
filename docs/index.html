@@ -1053,6 +1053,43 @@
     }
     .share-btn:hover { background: #333; }
 
+    /* サイト共有ボタン */
+    #site-share-btn {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 11px;
+      cursor: pointer;
+      margin-left: 4px;
+    }
+    #site-share-btn:hover { background: rgba(255,255,255,0.25); }
+    .share-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      padding: 6px 0;
+      z-index: 9999;
+      min-width: 160px;
+      display: none;
+    }
+    .share-menu.open { display: block; }
+    .share-menu a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      color: #333;
+      text-decoration: none;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .share-menu a:hover { background: #f0f0f0; }
+
   </style>
 </head>
 <body>
@@ -1065,6 +1102,15 @@
       <a class="header-link" href="https://x.com/aomori_snowatch" target="_blank" rel="noopener">@aomori_snowatch</a>
       <span class="header-link" onclick="openFeatureModal()">このマップの特徴</span>
       <span class="header-link" onclick="openModal()">免責事項・利用規約</span>
+      <span style="position:relative;display:inline-block">
+        <button id="site-share-btn" onclick="toggleShareMenu(event)">共有</button>
+        <div class="share-menu" id="share-menu">
+          <a href="#" onclick="shareTo('x',event)">𝕏 X (Twitter)</a>
+          <a href="#" onclick="shareTo('fb',event)">Facebook</a>
+          <a href="#" onclick="shareTo('line',event)">LINE</a>
+          <a href="#" onclick="shareTo('copy',event)">URLをコピー</a>
+        </div>
+      </span>
     </div>
     <div style="font-size:10px;opacity:0.6;width:100%;margin-top:2px">市民の体感情報を統計化し傾向を示す観測ツールです。行政の評価・採点を目的としません。</div>
   </div>
@@ -2045,6 +2091,40 @@
     };
 
     // Xで共有
+    // サイト共有メニュー
+    window.toggleShareMenu = function(e) {
+      e.stopPropagation();
+      var menu = document.getElementById('share-menu');
+      menu.classList.toggle('open');
+    };
+    document.addEventListener('click', function() {
+      document.getElementById('share-menu').classList.remove('open');
+    });
+
+    window.shareTo = function(platform, e) {
+      e.preventDefault();
+      document.getElementById('share-menu').classList.remove('open');
+      var url = 'https://aomori-snow-tracker.web.app/';
+      var text = '青森除雪ウォッチ — 青森市の除排雪スケジュールをリアルタイムで地図表示 #青森市 #除雪';
+      switch (platform) {
+        case 'x':
+          window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text + '\n' + url), '_blank', 'noopener');
+          break;
+        case 'fb':
+          window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url), '_blank', 'noopener');
+          break;
+        case 'line':
+          window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text), '_blank', 'noopener');
+          break;
+        case 'copy':
+          navigator.clipboard.writeText(url).then(function() {
+            alert('URLをコピーしました');
+          });
+          break;
+      }
+    };
+
+    // エリア個別のX共有
     window.shareArea = function(name) {
       const item = allLayers.find(l => l.feature.properties['名前'] === name);
       if (!item) return;
