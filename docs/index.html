@@ -2415,9 +2415,8 @@
       div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
       div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済み</div>';
       div.innerHTML += '<div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:10px;color:#888">応援除雪（県支援）</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#FF5252"></span>作業予定</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#757575"></span>未定</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#BDBDBD"></span>作業終了</div>';
+      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#2e7d32"></span>作業予定</div>';
+      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#ccc"></span>未定・作業終了</div>';
       return div;
     };
     legend.addTo(map);
@@ -2437,7 +2436,7 @@
         { key: 'ryusetsuko', label: '流雪溝施設', icon: '<span style="background:#3498db;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px">💧</span>' },
         { key: 'kokudo', label: '国道除雪状況', icon: '<span style="display:inline-block;width:14px;height:4px;background:#f1c40f;border-radius:2px"></span>' },
         { key: 'bus', label: 'バス運休区間', icon: '<span style="display:inline-block;width:14px;height:4px;background:#dc2626;border-radius:2px"></span>' },
-        { key: 'support', label: '応援除雪(県)', icon: '<span style="display:inline-block;width:14px;height:14px;background:#FF5252;opacity:0.5;border:1px solid #FF5252;border-radius:2px"></span>' },
+        { key: 'support', label: '応援除雪(県)', icon: '<span style="display:inline-block;width:14px;height:14px;background:#2e7d32;opacity:0.5;border:1px solid #2e7d32;border-radius:2px"></span>' },
       ];
 
       layers.forEach(function({ key, label, icon }) {
@@ -2958,16 +2957,19 @@
       supportZones.forEach(feature => {
         const props = feature.properties;
         const status = props.status || '未定';
-        let fillColor = '#757575';
-        let fillOpacity = 0.15;
-        if (status === '作業予定') { fillColor = '#FF5252'; fillOpacity = 0.35; }
-        else if (status === '作業終了') { fillColor = '#BDBDBD'; fillOpacity = 0.25; }
+        let fillColor = '#ccc';
+        let fillOpacity = 0.08;
+        let weight = 0.5;
+        if (status === '作業予定') { fillColor = '#2e7d32'; fillOpacity = 0.35; weight = 2; }
+        else if (status === '作業終了') { fillColor = '#ccc'; fillOpacity = 0.08; }
+        else { fillColor = '#ccc'; fillOpacity = 0.08; }
         const lyr = L.geoJSON(feature, {
-          style: { color: fillColor, weight: 1.5, fillColor: fillColor, fillOpacity: fillOpacity },
+          style: { color: fillColor, weight: weight, fillColor: fillColor, fillOpacity: fillOpacity },
         });
         let popupHtml = `<div style="min-width:180px">`;
         popupHtml += `<div style="font-size:13px;font-weight:bold;color:#1a3a5c;margin-bottom:4px">🏗 ${props['工区名'] || '不明'}</div>`;
-        popupHtml += `<div style="margin-bottom:4px"><span style="background:${fillColor};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold">${status}</span></div>`;
+        var badgeColor = status === '作業予定' ? '#2e7d32' : '#999';
+        popupHtml += `<div style="margin-bottom:4px"><span style="background:${badgeColor};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold">${status}</span></div>`;
         if (props['作業予定期間（開始予定日～終了予定日）']) {
           popupHtml += `<div style="font-size:12px;margin-bottom:3px"><b>期間:</b> ${props['作業予定期間（開始予定日～終了予定日）']}</div>`;
         }
