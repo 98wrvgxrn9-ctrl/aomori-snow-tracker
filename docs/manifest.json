@@ -1,12 +1,16 @@
 {
-  "name": "青森除雪ウォッチ",
+  "name": "青森除雪ウォッチ — 除排雪スケジュールマップ",
   "short_name": "除雪ウォッチ",
+  "description": "青森市の除排雪スケジュールをリアルタイムで地図表示。スタック回避ルート検索・SOS通報・バス運行状況も確認できます。",
   "start_url": "./",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#1a3a5c",
   "theme_color": "#1a3a5c",
+  "categories": ["weather", "navigation", "utilities"],
+  "lang": "ja",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
