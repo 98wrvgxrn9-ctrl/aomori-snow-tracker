@@ -141,19 +141,13 @@ def fetch_fms_from_spreadsheet():
         return None
 
     try:
-        # GitHub Secrets 経由では private_key 内の \n が崩れる
-        # 全改行除去→JSONパース→private_keyのPEM再構築
-        fixed = creds_json.replace("\\\r\n", "\\n").replace("\\\n", "\\n")
-        fixed = fixed.replace("\r", "").replace("\n", "")
-        creds_data = json.loads(fixed)
-        # private_key の PEM を再構築（壊れたスペース/改行を修復）
-        pk = creds_data.get("private_key", "")
-        m = re.search(r"BEGIN[^-]*PRIVATE[^-]*KEY[^-]*-----(.+?)-----[^-]*END", pk, re.DOTALL)
-        if m:
-            b64 = re.sub(r"\s+", "", m.group(1))  # 空白を全除去
-            lines = [b64[i:i+64] for i in range(0, len(b64), 64)]
-            pk = "-----BEGIN PRIVATE KEY-----\n" + "\n".join(lines) + "\n-----END PRIVATE KEY-----\n"
-            creds_data["private_key"] = pk
+        # base64エンコード済みの場合はデコード、そうでなければそのままパース
+        import base64
+        try:
+            decoded = base64.b64decode(creds_json).decode("utf-8")
+            creds_data = json.loads(decoded)
+        except Exception:
+            creds_data = json.loads(creds_json)
         creds = Credentials.from_service_account_info(
             creds_data,
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
