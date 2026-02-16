@@ -20,9 +20,9 @@ FMS_CSV_CANDIDATES = [
     os.path.join(SCRIPT_DIR, "..", "fms-data", "data", "analysis",
                  "fms_aomori_perfect_with_koku_merged_v2_latest.csv"),
     os.path.join(SCRIPT_DIR, "..", "fms-data", "data", "by_prefecture",
-                 "2_青森県_with_coordinates.csv"),
-    os.path.join(SCRIPT_DIR, "..", "fms-data", "data", "by_prefecture",
                  "2_青森県.csv"),
+    os.path.join(SCRIPT_DIR, "..", "fms-data", "data", "by_prefecture",
+                 "2_青森県_with_coordinates.csv"),
     os.path.join(SCRIPT_DIR, "..", "fms-data", "data", "analysis",
                  "fms_aomori_perfect_with_koku.csv"),
 ]
