@@ -13,9 +13,6 @@ permissions:
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    env:
-      NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
-
     steps:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v6
@@ -51,11 +48,6 @@ jobs:
 
       - name: 国道除雪状況取得
         run: python scripts/fetch_kokudo_status.py
-
-      - name: Notionにデータ同期
-        if: ${{ env.NOTION_API_KEY != '' }}
-        continue-on-error: true
-        run: python scripts/sync_notion.py
 
       - name: 変更をコミット・プッシュ
         run: |
