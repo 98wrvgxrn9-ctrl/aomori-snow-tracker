@@ -21,9 +21,25 @@ FMS_CSV_CANDIDATES = [
     os.path.join(SCRIPT_DIR, "..", "fms-data", "data", "analysis",
                  "fms_aomori_perfect_with_koku.csv"),
 ]
-KOKU_GEOJSON = os.path.join(SCRIPT_DIR, "..", "data", "processed", "koku.geojson")
-ROSEN_GEOJSON = os.path.join(SCRIPT_DIR, "..", "data", "processed", "rosen.geojson")
-OUT_PATH = os.path.join(SCRIPT_DIR, "..", "data", "processed", "fms_risk.json")
+def _resolve_path(*candidates):
+    """候補パスから最初に存在するものを返す。なければ最後の候補を返す。"""
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return candidates[-1]
+
+KOKU_GEOJSON = _resolve_path(
+    os.path.join(SCRIPT_DIR, "..", "data", "processed", "koku.geojson"),
+    os.path.join(SCRIPT_DIR, "..", "docs", "data", "koku.geojson"),
+)
+ROSEN_GEOJSON = _resolve_path(
+    os.path.join(SCRIPT_DIR, "..", "data", "processed", "rosen.geojson"),
+    os.path.join(SCRIPT_DIR, "..", "docs", "data", "rosen.geojson"),
+)
+OUT_PATH = _resolve_path(
+    os.path.join(SCRIPT_DIR, "..", "data", "processed", "fms_risk.json"),
+    os.path.join(SCRIPT_DIR, "..", "docs", "data", "fms_risk.json"),
+)
 
 PERIOD_DAYS = 7  # 直近7日間を集計
 
