@@ -246,6 +246,8 @@
       #map { height: 50vh; min-height: 300px; width: 100%; order: -1; }
       #panel { width: 100%; height: auto; min-height: 50vh; border-left: none; border-top: 1px solid #ddd; overflow-y: visible; }
       .summary-grid { grid-template-columns: 1fr 1fr 1fr; }
+      #header .header-nav-wrap { flex: 1; text-align: center; }
+      #header-title { font-size: 14px; }
     }
 
     /* 凡例 */
@@ -256,6 +258,8 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.2);
       font-size: 9px;
       line-height: 1.6;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
     }
     .legend-item { display: flex; align-items: center; gap: 4px; }
     .legend-color {
@@ -2402,7 +2406,7 @@
     };
 
     // 凡例
-    const legend = L.control({ position: 'bottomleft' });
+    const legend = L.control({ position: 'topleft' });
     var legendDiv = null;
     legend.onAdd = function() {
       legendDiv = L.DomUtil.create('div', 'legend');

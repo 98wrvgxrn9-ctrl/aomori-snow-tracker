@@ -1,4 +1,4 @@
-const CACHE_NAME = 'snow-tracker-v2';
+const CACHE_NAME = 'snow-tracker-v3';
 const SHELL_ASSETS = [
   './',
   './index.html',
