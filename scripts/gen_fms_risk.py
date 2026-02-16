@@ -141,8 +141,25 @@ def fetch_fms_from_spreadsheet():
         return None
 
     try:
-        # GitHub Secretsでは private_key 内の \n が実際の改行になることがある
-        creds_data = json.loads(creds_json, strict=False)
+        # GitHub Secrets 経由の JSON は private_key 内のエスケープが崩れることがある
+        # 複数のパース方法を試す
+        creds_data = None
+        for attempt, src in enumerate([
+            creds_json,
+            creds_json.replace("\n", "\\n"),  # 実改行→エスケープに戻す
+        ]):
+            try:
+                creds_data = json.loads(src)
+                break
+            except json.JSONDecodeError:
+                try:
+                    creds_data = json.loads(src, strict=False)
+                    break
+                except json.JSONDecodeError:
+                    continue
+        if creds_data is None:
+            print("GOOGLE_CREDENTIALS_JSONのパースに失敗")
+            return None
         creds = Credentials.from_service_account_info(
             creds_data,
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
