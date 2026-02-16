@@ -9,11 +9,21 @@ import re
 import unicodedata
 from datetime import datetime, timedelta
 
-FMS_CSV = os.path.join(os.path.dirname(__file__), "..", "fms-data", "data", "analysis",
-                       "fms_aomori_perfect_with_koku_merged_v2_latest.csv")
-KOKU_GEOJSON = os.path.join(os.path.dirname(__file__), "..", "docs", "data", "koku.geojson")
-ROSEN_GEOJSON = os.path.join(os.path.dirname(__file__), "..", "docs", "data", "rosen.geojson")
-OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "docs", "data", "fms_risk.json")
+SCRIPT_DIR = os.path.dirname(__file__)
+FMS_CSV_CANDIDATES = [
+    os.environ.get("FMS_CSV_PATH", ""),
+    os.path.join(SCRIPT_DIR, "..", "data", "processed", "fms",
+                 "fms_aomori_perfect_with_koku_merged_v2_latest.csv"),
+    os.path.join(SCRIPT_DIR, "..", "fms-data", "data", "analysis",
+                 "fms_aomori_perfect_with_koku_merged_v2_latest.csv"),
+    os.path.join(SCRIPT_DIR, "..", "fms-data", "data", "by_prefecture",
+                 "2_青森県.csv"),
+    os.path.join(SCRIPT_DIR, "..", "fms-data", "data", "analysis",
+                 "fms_aomori_perfect_with_koku.csv"),
+]
+KOKU_GEOJSON = os.path.join(SCRIPT_DIR, "..", "data", "processed", "koku.geojson")
+ROSEN_GEOJSON = os.path.join(SCRIPT_DIR, "..", "data", "processed", "rosen.geojson")
+OUT_PATH = os.path.join(SCRIPT_DIR, "..", "data", "processed", "fms_risk.json")
 
 PERIOD_DAYS = 7  # 直近7日間を集計
 
@@ -73,6 +83,28 @@ def point_to_line_min_distance(plat, plng, coords):
     return min_d
 
 
+def polygon_centroid(coordinates):
+    """GeoJSONポリゴン座標から重心を計算。返り値は (lat, lng)。"""
+    ring = coordinates[0]  # 外周リングのみ使用
+    n = len(ring)
+    if n == 0:
+        return (0, 0)
+    avg_lng = sum(c[0] for c in ring) / n
+    avg_lat = sum(c[1] for c in ring) / n
+    return (avg_lat, avg_lng)
+
+
+KOKU_MATCH_DISTANCE_KM = 5.0  # 座標→工区マッチングの最大距離
+
+
+def resolve_fms_csv():
+    """優先順位でFMS CSVファイルを探す。見つかったパスを返す。"""
+    for path in FMS_CSV_CANDIDATES:
+        if path and os.path.exists(path):
+            return path
+    return None
+
+
 def aggregate_risk(posts):
     """投稿リストからリスク集計を返す"""
     risk_counts = {"stacked": 0, "near_stack": 0, "passable_slow": 0, "resolved": 0, "info": 0}
@@ -129,12 +161,18 @@ def main():
         rosen_coords[name].extend(coords)
 
     # --- FMS投稿読み込み（直近7日間のみ） ---
-    if not os.path.exists(FMS_CSV):
-        print(f"FMS CSVが見つかりません: {FMS_CSV}")
+    fms_csv_path = resolve_fms_csv()
+    if not fms_csv_path:
+        print(f"FMS CSVが見つかりません。探索パス:")
+        for p in FMS_CSV_CANDIDATES:
+            if p:
+                print(f"  - {p}")
         print("既存のfms_risk.jsonを維持します。")
         return
 
-    with open(FMS_CSV, encoding="utf-8-sig") as f:
+    print(f"FMS CSV: {fms_csv_path}")
+
+    with open(fms_csv_path, encoding="utf-8-sig") as f:
         fms_rows = list(csv.DictReader(f))
 
     recent_posts = []
@@ -152,23 +190,62 @@ def main():
     print(f"工区数: {len(koku_info)}, 路線数: {len(rosen_coords)}")
 
     # --- 工区集計 ---
+    # CSVに matched_koku 列があるか判定
+    has_matched_koku = "matched_koku" in recent_posts[0] if recent_posts else False
+    if not has_matched_koku:
+        print("matched_koku列なし → 座標ベースで工区マッチングを実行")
+
+    # 座標マッチ用: 工区名→重心座標を事前計算
+    koku_centroids = {}  # 工区名 → (lat, lng)
+    for feat in koku_data["features"]:
+        name = feat["properties"].get("名前", "")
+        if name and feat["geometry"]["type"] == "Polygon":
+            koku_centroids[name] = polygon_centroid(feat["geometry"]["coordinates"])
+
     koku_posts = {}  # 工区名 → [posts]
     unmatched_koku_posts = []  # 工区にマッチしなかった投稿
 
     for row in recent_posts:
-        csv_koku = row.get("matched_koku", "").strip()
-        # まず完全一致、次に正規化一致で照合
-        if csv_koku and csv_koku in koku_info:
-            koku_posts.setdefault(csv_koku, []).append(row)
-        elif csv_koku:
-            norm = normalize_name(csv_koku)
-            display_name = koku_norm_to_name.get(norm)
-            if display_name:
-                koku_posts.setdefault(display_name, []).append(row)
+        if has_matched_koku:
+            # 既存ロジック: matched_koku列を使用
+            csv_koku = row.get("matched_koku", "").strip()
+            if csv_koku and csv_koku in koku_info:
+                koku_posts.setdefault(csv_koku, []).append(row)
+            elif csv_koku:
+                norm = normalize_name(csv_koku)
+                display_name = koku_norm_to_name.get(norm)
+                if display_name:
+                    koku_posts.setdefault(display_name, []).append(row)
+                else:
+                    unmatched_koku_posts.append(row)
             else:
                 unmatched_koku_posts.append(row)
         else:
-            unmatched_koku_posts.append(row)
+            # 座標ベースマッチング: 投稿座標→最寄り工区重心
+            try:
+                plat = float(row.get("latitude", 0))
+                plng = float(row.get("longitude", 0))
+            except (ValueError, TypeError):
+                unmatched_koku_posts.append(row)
+                continue
+
+            if plat == 0 or plng == 0:
+                unmatched_koku_posts.append(row)
+                continue
+
+            best_koku = None
+            best_dist = KOKU_MATCH_DISTANCE_KM
+
+            for kname, (clat, clng) in koku_centroids.items():
+                d = haversine_km(plat, plng, clat, clng)
+                if d < best_dist:
+                    best_dist = d
+                    best_koku = kname
+
+            if best_koku:
+                koku_posts.setdefault(best_koku, []).append(row)
+            else:
+                unmatched_koku_posts.append(row)
 
     koku_result = {}
     for name, posts in koku_posts.items():
