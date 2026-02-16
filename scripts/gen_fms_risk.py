@@ -7,8 +7,10 @@ import math
 import os
 import re
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
+from urllib.request import urlopen, Request
 
 SCRIPT_DIR = os.path.dirname(__file__)
 FMS_CSV_CANDIDATES = [
@@ -124,6 +126,53 @@ def resolve_fms_csv():
     return None
 
 
+def fetch_coords_from_url(url):
+    """FMSの投稿ページHTMLから座標を抽出する。返り値は (lat, lng) or None。"""
+    try:
+        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urlopen(req, timeout=10) as resp:
+            html = resp.read().decode("utf-8", errors="ignore")
+        # lat,lng のペアを探す（日本の座標範囲）
+        pairs = re.findall(
+            r"((?:3[5-9]|4[0-5])\.\d{5,})\D+(1[2-4][0-9]\.\d{5,})", html
+        )
+        if pairs:
+            return (float(pairs[0][0]), float(pairs[0][1]))
+    except Exception:
+        pass
+    return None
+
+
+def backfill_coordinates(posts, max_workers=20):
+    """座標が空の投稿のURLからHTMLを取得して座標を補完する。"""
+    needs_coords = [(i, row) for i, row in enumerate(posts)
+                    if not row.get("latitude", "").strip() or not row.get("longitude", "").strip()]
+    if not needs_coords:
+        return 0
+
+    print(f"座標補完: {len(needs_coords)}件のURLから座標を取得中...")
+    filled = 0
+
+    def _fetch(idx_row):
+        idx, row = idx_row
+        url = row.get("link", "").strip() or row.get("guid", "").strip()
+        if not url:
+            return idx, None
+        return idx, fetch_coords_from_url(url)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(_fetch, item): item for item in needs_coords}
+        for future in as_completed(futures):
+            idx, coords = future.result()
+            if coords:
+                posts[idx]["latitude"] = str(coords[0])
+                posts[idx]["longitude"] = str(coords[1])
+                filled += 1
+
+    print(f"座標補完完了: {filled}/{len(needs_coords)}件成功")
+    return filled
+
+
 def aggregate_risk(posts):
     """投稿リストからリスク集計を返す"""
     risk_counts = {"stacked": 0, "near_stack": 0, "passable_slow": 0, "resolved": 0, "info": 0}
@@ -211,6 +260,11 @@ def main():
 
     print(f"FMS全投稿: {len(fms_rows)}件")
     print(f"直近{PERIOD_DAYS}日間: {len(recent_posts)}件")
+
+    # 座標が空の投稿があればURLから補完
+    if recent_posts:
+        backfill_coordinates(recent_posts)
+
     print(f"工区数: {len(koku_info)}, 路線数: {len(rosen_coords)}")
 
     # --- 工区集計 ---
