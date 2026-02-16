@@ -154,8 +154,11 @@ def fetch_fms_from_spreadsheet():
         )
         client = gspread.authorize(creds)
         sheet = client.open_by_key(FMS_SPREADSHEET_ID).sheet1
-        rows = sheet.get_all_records()
-        print(f"スプシから{len(rows)}件取得")
+        raw_rows = sheet.get_all_records()
+        print(f"スプシから{len(raw_rows)}件取得")
+
+        # カラム名の末尾スペースを除去して正規化
+        rows = [{k.strip(): v for k, v in row.items()} for row in raw_rows]
 
         # スプシのカラム名をgen_fms_risk.pyの期待する形式に変換
         posts = []
@@ -265,6 +268,11 @@ def main():
         # ISO形式 "2026-02-10" or "2026-02-10 12:34:56"
         try:
             return datetime.strptime(s[:10], "%Y-%m-%d")
+        except ValueError:
+            pass
+        # スプシ形式 "2026/02/16 23:54:37"
+        try:
+            return datetime.strptime(s[:10], "%Y/%m/%d")
         except ValueError:
             pass
         # RFC 2822形式 "Thu, 25 Dec 2025 03:45:18 GMT"
