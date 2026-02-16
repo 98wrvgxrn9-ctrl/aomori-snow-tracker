@@ -1,4 +1,4 @@
-const CACHE_NAME = 'snow-tracker-v1';
+const CACHE_NAME = 'snow-tracker-v2';
 const SHELL_ASSETS = [
   './',
   './index.html',
@@ -36,6 +36,10 @@ self.addEventListener('activate', function(event) {
 self.addEventListener('fetch', function(event) {
   // POST等はスキップ
   if (event.request.method !== 'GET') return;
+
+  // 外部リソース（タイルURL等）はSWを介さずブラウザに任せる
+  var url = new URL(event.request.url);
+  if (url.origin !== location.origin) return;
 
   event.respondWith(
     fetch(event.request).then(function(response) {
