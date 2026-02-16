@@ -145,7 +145,8 @@ def fetch_fms_from_spreadsheet():
         print(f"creds_json length: {len(creds_json)}")
         print(f"creds_json[:80]: {repr(creds_json[:80])}")
         print(f"creds_json has newlines: {chr(10) in creds_json}")
-        print(f"creds_json has literal backslash-n: {'\\\\n' in repr(creds_json)}")
+        has_lit_bsn = "\\n" in creds_json
+        print(f"creds_json has literal backslash-n: {has_lit_bsn}")
 
         # GitHub Secrets 経由の JSON は private_key 内のエスケープが崩れることがある
         creds_data = None
