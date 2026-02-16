@@ -4,3 +4,5 @@
 *.jpg
 !docs/icon-*.png
 fms-data/
+docs/構想メモ.md
+docs/補助金リスト.md

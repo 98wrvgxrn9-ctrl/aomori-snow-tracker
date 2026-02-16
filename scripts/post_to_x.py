@@ -68,8 +68,9 @@ def oauth_sign(method, url, params, consumer_secret, token_secret):
         + "&"
         + urllib.parse.quote(token_secret, safe="")
     )
+    # OAuth 1.0a仕様でHMAC-SHA1が必須（アルゴリズム変更不可）
     sig = base64.b64encode(
-        hmac.new(key.encode(), base.encode(), hashlib.sha1).digest()
+        hmac.new(key.encode(), base.encode(), hashlib.sha1).digest()  # nosec
     ).decode()
     return sig
 

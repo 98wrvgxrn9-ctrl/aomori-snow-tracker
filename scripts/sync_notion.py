@@ -44,8 +44,17 @@ def save_db_ids(ids):
 
 def notion_request(method, endpoint, payload=None, retries=3):
     url = f"{NOTION_BASE}{endpoint}"
+    resp = None
     for attempt in range(retries):
-        resp = requests.request(method, url, headers=HEADERS, json=payload, timeout=30)
+        try:
+            resp = requests.request(method, url, headers=HEADERS, json=payload, timeout=30)
+        except requests.exceptions.RequestException as e:
+            wait = (attempt + 1) * 3
+            print(f"  接続エラー({type(e).__name__})... {wait}秒後にリトライ ({attempt+1}/{retries})")
+            time.sleep(wait)
+            if attempt == retries - 1:
+                raise
+            continue
         if resp.status_code == 429 or resp.status_code >= 500:
             wait = (attempt + 1) * 2
             print(f"  リトライ({resp.status_code})... {wait}秒待機")
@@ -55,8 +64,10 @@ def notion_request(method, endpoint, payload=None, retries=3):
             print(f"Notion API error: {resp.status_code} {resp.text}")
         resp.raise_for_status()
         return resp.json()
-    resp.raise_for_status()
-    return resp.json()
+    if resp is not None:
+        resp.raise_for_status()
+        return resp.json()
+    raise requests.exceptions.ConnectionError(f"{retries}回リトライ後も接続失敗")
 
 
 def create_database(parent_page_id, title, properties):

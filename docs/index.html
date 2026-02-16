@@ -6,6 +6,22 @@
   <title>青森市 除排雪スケジュールマップ</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1a3a5c">
+  <meta name="description" content="青森市の除排雪スケジュールをリアルタイムで地図表示。スタック情報・安全ルート検索・市営バス運行状況も確認できます。">
+  <!-- OGP -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="青森除雪ウォッチ — 除排雪スケジュールマップ">
+  <meta property="og:description" content="青森市の除排雪スケジュールをリアルタイムで地図表示。スタック回避ルート検索・SOS通報・バス運行状況も。">
+  <meta property="og:url" content="https://98wrvgxrn9-ctrl.github.io/aomori-snow-tracker/">
+  <meta property="og:image" content="https://98wrvgxrn9-ctrl.github.io/aomori-snow-tracker/icon-512.png">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:site_name" content="青森除雪ウォッチ">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="青森除雪ウォッチ — 除排雪スケジュールマップ">
+  <meta name="twitter:description" content="青森市の除排雪スケジュールをリアルタイムで地図表示。スタック回避ルート検索・SOS通報・バス運行状況も。">
+  <meta name="twitter:image" content="https://98wrvgxrn9-ctrl.github.io/aomori-snow-tracker/icon-512.png">
+  <meta name="twitter:site" content="@aomori_snowatch">
+  <link rel="canonical" href="https://98wrvgxrn9-ctrl.github.io/aomori-snow-tracker/">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="除雪ウォッチ">
@@ -230,24 +246,31 @@
       #map { height: 50vh; min-height: 300px; width: 100%; order: -1; }
       #panel { width: 100%; height: auto; min-height: 50vh; border-left: none; border-top: 1px solid #ddd; overflow-y: visible; }
       .summary-grid { grid-template-columns: 1fr 1fr 1fr; }
+      #header { position: relative; justify-content: center; }
+      #header .header-nav-wrap { width: 100%; text-align: center; order: -1; }
+      #header-title { font-size: 14px; }
+      #back-btn { position: absolute; left: 10px; top: 10px; }
     }
 
     /* 凡例 */
     .legend {
-      background: #fff;
-      padding: 8px 12px;
-      border-radius: 6px;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.3);
-      font-size: 11px;
-      line-height: 1.8;
+      background: rgba(255,255,255,0.9);
+      padding: 4px 7px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      font-size: 9px;
+      line-height: 1.6;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
     }
-    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-item { display: flex; align-items: center; gap: 4px; }
     .legend-color {
-      width: 14px; height: 10px;
+      width: 10px; height: 6px;
       border: 1px solid #999;
-      border-radius: 2px;
+      border-radius: 1px;
       flex-shrink: 0;
     }
+    .legend-section { border-top: 1px solid #eee; margin: 2px 0; padding-top: 2px; font-size: 8px; color: #aaa; }
 
     /* X投稿カード */
     .x-posts-section {
@@ -439,6 +462,29 @@
     .dump-tooltip {
       font-size: 13px;
       padding: 6px 10px;
+    }
+
+    /* 流雪溝マーカー */
+    .ryusetsu-icon {
+      border: 2px solid #fff;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      line-height: 1;
+      color: #fff;
+    }
+    .ryusetsu-icon.pump { background: #3498db; }
+    .ryusetsu-icon.drain { background: #e67e22; }
+    .ryusetsu-icon.intake { background: #9b59b6; }
+    .ryusetsu-tooltip {
+      font-size: 12px;
+      padding: 4px 8px;
     }
 
     /* SOSボタン */
@@ -688,6 +734,7 @@
       cursor: pointer;
       text-decoration: underline;
       margin-left: 12px;
+      white-space: nowrap;
     }
     #header .header-link:hover { color: #fff; }
 
@@ -742,17 +789,375 @@
     @media (max-width: 768px) {
       .feature-grid { grid-template-columns: 1fr; }
     }
+
+    /* レイヤーコントロール */
+    .layer-control {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      font-size: 12px;
+      min-width: 170px;
+    }
+    .layer-control-header {
+      background: #1a3a5c;
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+    .layer-control-header.collapsed {
+      border-radius: 8px;
+    }
+    .layer-control-body {
+      padding: 6px 8px;
+    }
+    .layer-control-body.hidden {
+      display: none;
+    }
+    .layer-control-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 2px;
+      cursor: pointer;
+    }
+    .layer-control-item:hover {
+      background: #f0f4f8;
+      border-radius: 4px;
+    }
+    .layer-control-item input[type="checkbox"] {
+      margin: 0;
+      cursor: pointer;
+    }
+    .layer-control-item label {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+    }
+    /* ハブビュー */
+    #hub-view {
+      min-height: calc(100vh - 44px);
+      background: linear-gradient(135deg, #1a3a5c 0%, #2d5a8c 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    .hub-hero {
+      text-align: center;
+      color: #fff;
+      margin-bottom: 32px;
+    }
+    .hub-hero .hub-icon { font-size: 48px; margin-bottom: 8px; }
+    .hub-hero h2 { font-size: 20px; font-weight: bold; margin-bottom: 6px; }
+    .hub-hero p { font-size: 13px; opacity: 0.8; }
+    .hub-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      max-width: 400px;
+      width: 100%;
+    }
+    .hub-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      transition: transform 0.15s, box-shadow 0.15s;
+      border: 2px solid transparent;
+    }
+    .hub-card:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.2); }
+    .hub-card:active { transform: scale(0.97); }
+    .hub-card .hub-card-icon { font-size: 36px; margin-bottom: 8px; }
+    .hub-card .hub-card-title { font-size: 15px; font-weight: bold; color: #1a3a5c; margin-bottom: 4px; }
+    .hub-card .hub-card-desc { font-size: 11px; color: #888; }
+    .hub-card-sos { border-color: #dc2626; }
+    .hub-card-sos .hub-card-title { color: #dc2626; }
+    .hub-footer {
+      margin-top: 24px;
+      text-align: center;
+    }
+    .hub-footer a {
+      color: rgba(255,255,255,0.7);
+      font-size: 11px;
+      text-decoration: underline;
+      margin: 0 8px;
+    }
+    .hub-footer a:hover { color: #fff; }
+
+    /* 戻るボタン */
+    /* ヘッダーナビメニュー */
+    .header-nav-wrap { position: relative; display: inline-block; }
+    .header-nav-wrap h1 { cursor: pointer; }
+    .header-nav-wrap h1::after { content: ' ▾'; font-size: 12px; opacity: 0.6; }
+    .nav-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      padding: 6px 0;
+      z-index: 9999;
+      min-width: 200px;
+    }
+    .nav-menu.open { display: block; }
+    .nav-menu a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      color: #333;
+      text-decoration: none;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .nav-menu a:hover { background: #f0f0f0; }
+    .nav-menu a.nav-active { background: #e8f0fe; font-weight: bold; color: #1a3a5c; }
+
+    #back-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0 8px 0 0;
+      line-height: 1;
+      display: none;
+    }
+    #back-btn:hover { opacity: 0.7; }
+
+    /* ダッシュボードビュー */
+    #dashboard-view {
+      display: none;
+      min-height: calc(100vh - 44px);
+      background: #f8f9fa;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .dash-loading {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+      font-size: 14px;
+    }
+
+    /* ナビビュー */
+    #navi-view {
+      display: none;
+      min-height: calc(100vh - 44px);
+      background: #f8f9fa;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .navi-form {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .navi-form label {
+      font-size: 12px;
+      font-weight: bold;
+      color: #555;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .navi-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .navi-input:focus { border-color: #1a3a5c; }
+    .navi-autocomplete {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      max-height: 180px;
+      overflow-y: auto;
+      margin-top: -8px;
+      margin-bottom: 10px;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .navi-autocomplete-item {
+      padding: 10px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .navi-autocomplete-item:last-child { border-bottom: none; }
+    .navi-autocomplete-item:hover { background: #f0f5ff; }
+    .navi-gps-status {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .navi-gps-status.ok { color: #27ae60; }
+    .navi-gps-status.error { color: #e74c3c; }
+    .navi-search-btn {
+      width: 100%;
+      background: #1a3a5c;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .navi-search-btn:hover { background: #24506e; }
+    .navi-search-btn:disabled { background: #aaa; cursor: not-allowed; }
+    .navi-result {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .navi-result h3 {
+      font-size: 14px;
+      color: #1a3a5c;
+      margin-bottom: 10px;
+    }
+    .navi-route-step {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+      font-size: 13px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .navi-route-step:last-child { border-bottom: none; }
+    .step-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    .step-risk {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 10px;
+      color: #fff;
+    }
+    .navi-show-map-btn {
+      width: 100%;
+      background: #27ae60;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .navi-show-map-btn:hover { background: #219a52; }
+    .share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #000;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .share-btn:hover { background: #333; }
+
+    /* サイト共有ボタン */
+    #site-share-btn {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 11px;
+      cursor: pointer;
+      margin-left: 4px;
+    }
+    #site-share-btn:hover { background: rgba(255,255,255,0.25); }
+    .share-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      padding: 6px 0;
+      z-index: 9999;
+      min-width: 160px;
+      display: none;
+    }
+    .share-menu.open { display: block; }
+    .share-menu a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      color: #333;
+      text-decoration: none;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .share-menu a:hover { background: #f0f0f0; }
+
   </style>
 </head>
 <body>
   <div id="header">
-    <h1>青森市 除排雪スケジュールマップ</h1>
+    <button id="back-btn" onclick="switchView('hub')">&#8592;</button>
+    <span class="header-nav-wrap">
+      <h1 id="header-title" onclick="toggleNavMenu(event)">青森市 除排雪スケジュールマップ</h1>
+      <div class="nav-menu" id="nav-menu">
+        <a href="#" onclick="navTo('hub',event)">&#10052; トップ</a>
+        <a href="#" onclick="navTo('map',event)">&#x1F5FA; 除排雪マップ</a>
+        <a href="#" onclick="navTo('sos',event)">&#x1F198; SOS通報</a>
+        <a href="#" onclick="navTo('navi',event)">&#x1F6E3; 安全ルート</a>
+        <a href="#" onclick="navTo('dashboard',event)">&#x1F4CA; ダッシュボード</a>
+      </div>
+    </span>
     <div>
       <small id="update-time"></small>
       <button id="reload-btn" onclick="location.reload()">更新</button>
       <a class="header-link" href="https://x.com/aomori_snowatch" target="_blank" rel="noopener">@aomori_snowatch</a>
       <span class="header-link" onclick="openFeatureModal()">このマップの特徴</span>
       <span class="header-link" onclick="openModal()">免責事項・利用規約</span>
+      <span style="position:relative;display:inline-block">
+        <button id="site-share-btn" onclick="toggleShareMenu(event)">共有</button>
+        <div class="share-menu" id="share-menu">
+          <a href="#" onclick="shareTo('x',event)">𝕏 X (Twitter)</a>
+          <a href="#" onclick="shareTo('fb',event)">Facebook</a>
+          <a href="#" onclick="shareTo('line',event)">LINE</a>
+          <a href="#" onclick="shareTo('copy',event)">URLをコピー</a>
+        </div>
+      </span>
     </div>
     <div style="font-size:10px;opacity:0.6;width:100%;margin-top:2px">市民の体感情報を統計化し傾向を示す観測ツールです。行政の評価・採点を目的としません。</div>
   </div>
@@ -769,7 +1174,7 @@
         </div>
         <div class="feature-card">
           <h4>直近7日間の傾向分析</h4>
-          <p>市民投稿は直近7日間のスライディングウィンドウで集計し、変化を継続観測します。</p>
+          <p>市民投稿（FMS）は直近7日間分を集計し、毎日更新されます。古い投稿は自動的に入れ替わります。</p>
         </div>
         <div class="feature-card">
           <h4>行動に必要な生活情報</h4>
@@ -840,12 +1245,14 @@
         <li>個人が特定される情報は一切表示しません。</li>
       </ul>
 
-      <h3>8. データソース</h3>
+      <h3>8. データソース・引用元</h3>
+      <p style="font-size:13px;color:#555;margin-bottom:8px">本サービスは以下の情報を引用・利用しています。各データの著作権・利用条件は提供元に帰属します。</p>
       <ul>
-        <li>除排雪スケジュール: 青森市が公開するオープンデータ</li>
+        <li>除排雪スケジュール: <a href="https://www.city.aomori.aomori.jp/seikatsu/kurashi/seikatsu/yuki/index.html" target="_blank" rel="noopener">青森市 — 雪についてのお知らせ</a>（市が公開するオープンデータを引用）</li>
+        <li>雪捨て場情報: <a href="https://www.city.aomori.aomori.jp/" target="_blank" rel="noopener">青森市公式サイト</a>（公開情報を引用）</li>
+        <li>市民レポート（FMS）: <a href="https://www.fixmystreet.jp/" target="_blank" rel="noopener">FixMyStreet Japan</a>（公開投稿を統計化して引用。原文は各投稿ページをご参照ください）</li>
+        <li>市民体感（SNS）: X（旧Twitter）上の公開投稿を統計化（原文非公開・個人特定情報なし）</li>
         <li>地図タイル: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</li>
-        <li>市民体感: SNS公開投稿の統計化データ（原文非公開）</li>
-        <li>雪捨て場: 青森市公開情報</li>
       </ul>
 
       <h3>9. SOS機能について</h3>
@@ -864,7 +1271,7 @@
     </div>
   </div>
   <!-- SOSボタン -->
-  <button id="sos-btn" onclick="openSosWarning()">
+  <button id="sos-btn" style="display:none" onclick="openSosWarning()">
     <span style="font-size:20px">🆘</span>
     <span style="font-size:10px">SOS</span>
   </button>
@@ -925,7 +1332,57 @@
     </div>
   </div>
 
-  <div id="main">
+  <!-- ハブビュー -->
+  <div id="hub-view">
+    <div class="hub-hero">
+      <div class="hub-icon">&#10052;</div>
+      <h2>青森除雪ウォッチ</h2>
+      <p>除排雪の状況をリアルタイムで確認</p>
+    </div>
+    <div class="hub-grid">
+      <div class="hub-card" onclick="switchView('map')">
+        <div class="hub-card-icon">&#x1F5FA;</div>
+        <div class="hub-card-title">マップを見る</div>
+        <div class="hub-card-desc">除排雪スケジュール地図</div>
+      </div>
+      <div class="hub-card hub-card-sos" onclick="switchView('sos')">
+        <div class="hub-card-icon">&#x1F198;</div>
+        <div class="hub-card-title">SOS通報</div>
+        <div class="hub-card-desc">スタック等の緊急通報</div>
+      </div>
+      <div class="hub-card" onclick="switchView('navi')">
+        <div class="hub-card-icon">&#x1F6E3;</div>
+        <div class="hub-card-title">安全ルート</div>
+        <div class="hub-card-desc">スタック回避ルート検索</div>
+      </div>
+      <div class="hub-card" onclick="switchView('dashboard')">
+        <div class="hub-card-icon">&#x1F4CA;</div>
+        <div class="hub-card-title">ダッシュボード</div>
+        <div class="hub-card-desc">サマリー・リスク・バス情報</div>
+      </div>
+    </div>
+    <div class="hub-footer">
+      <a href="https://x.com/aomori_snowatch" target="_blank" rel="noopener">@aomori_snowatch</a>
+      <a href="javascript:void(0)" onclick="openFeatureModal()">このサービスについて</a>
+    </div>
+  </div>
+
+  <!-- ダッシュボードビュー -->
+  <div id="dashboard-view">
+    <div class="dash-loading" id="dash-loading">データを読み込み中...</div>
+    <div id="dash-summary"></div>
+    <div id="dash-fms-risk"></div>
+    <div id="dash-bus-status"></div>
+  </div>
+
+  <!-- 安全ルート検索ビュー -->
+  <div id="navi-view">
+    <div class="dash-loading" id="navi-loading">データを読み込み中...</div>
+    <div id="navi-form-container"></div>
+    <div id="navi-result-container"></div>
+  </div>
+
+  <div id="main" style="display:none">
     <div id="map"></div>
     <div id="panel">
       <div id="panel-header" style="display:flex;justify-content:space-between;align-items:center">
@@ -939,8 +1396,8 @@
         <div style="background:#fff8e1;border-left:3px solid #f9a825;padding:8px 10px;margin-bottom:10px;font-size:11px;line-height:1.5;color:#5d4037;border-radius:0 4px 4px 0">
           <strong>データの特性について：</strong>市の公開情報は「作業予定」と表記されていますが、更新タイミングの都合上、実際には前日分の作業報告に近い内容になっていることがあります。当日の最新予定として確定的に扱わず、目安としてご活用ください。
         </div>
+        <div id="panel-layer-control"></div>
         <div id="summary"></div>
-        <div id="x-unmatched"></div>
         <div id="fms-risk-panel"></div>
         <div id="selected-info"></div>
         <div id="x-posts-container"></div>
@@ -958,6 +1415,9 @@
     </div>
   </div>
 
+  <script src="js/face-score.js"></script>
+  <script src="js/road-condition-predict.js"></script>
+  <script src="js/road-condition-svg.js"></script>
   <script>
     // ステータス判定（部分一致）
     function classifyStatus(raw) {
@@ -981,7 +1441,9 @@
     }
 
     // 地図初期化
-    const map = L.map('map').setView([40.8225, 140.7474], 12);
+    const DEFAULT_CENTER = [40.8227, 140.7380];
+    const DEFAULT_ZOOM = 13;
+    const map = L.map('map').setView(DEFAULT_CENTER, DEFAULT_ZOOM);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 18,
@@ -994,15 +1456,434 @@
     let xPostsData = [];  // X投稿データ
     let areasMeta = {};   // 工区メタデータ（centroid, bbox, neighbors）
     let dumpSites = [];   // 雪捨て場データ
+    let ryusetsukoData = []; // 流雪溝施設データ
     let busStatusData = null; // 市営バス運行状況
     let kokudoFeatures = []; // 国道除雪状況
+    let supportZones = [];   // 応援除雪工区（県財政支援）
     let fmsCounts = {};      // FMS関心度（工区/路線名→レベル）
     let fmsRisk = {};        // FMSリスクデータ（工区名→{total, stuck_total, ...}）
     let prevSummary = null;  // 前日サマリー
+    let roadPredictions = {}; // 路面状況予測
     let busSuspendedData = null; // バス運休路線GeoJSON
     let busLayers = [];          // バス運休路線のLeafletレイヤー群
     let busLayersVisible = false; // バス路線表示状態
+    let routeLayer = null;       // ルート描画用LayerGroup
+    let naviOriginArea = null;   // 出発エリア名
+    let naviDestArea = null;     // 目的地エリア名
+    let naviGpsCoords = null;    // GPS座標
+    let pendingRouteResult = null; // 検索結果保持
+
+    // レイヤーグループ
+    const dumpSiteLayer = L.layerGroup();
+    const ryusetsukoLayer = L.layerGroup();
+    const kokudoLayer = L.layerGroup();
+    const busLayer = L.layerGroup();
+    const supportLayer = L.layerGroup();
+    const layerVisibility = { dump: true, ryusetsuko: true, kokudo: true, bus: false, support: true };
+    const layerGroupMap = { dump: dumpSiteLayer, ryusetsuko: ryusetsukoLayer, kokudo: kokudoLayer, bus: busLayer, support: supportLayer };
     const FEATURE_VIDEO_URL = ''; // 例: 'https://www.youtube.com/embed/xxxxxxxxxxx'
+
+    // ビュー管理
+    let currentView = 'hub';
+    let dataReady = false;
+
+    window.switchView = function(view) {
+      if (view === 'sos') {
+        openSosWarning();
+        return;
+      }
+
+      // 全ビュー非表示
+      document.getElementById('hub-view').style.display = 'none';
+      document.getElementById('main').style.display = 'none';
+      document.getElementById('dashboard-view').style.display = 'none';
+      document.getElementById('navi-view').style.display = 'none';
+      document.getElementById('sos-btn').style.display = 'none';
+
+      // 戻るボタン
+      const backBtn = document.getElementById('back-btn');
+      const titleEl = document.getElementById('header-title');
+
+      if (view === 'hub') {
+        document.getElementById('hub-view').style.display = 'flex';
+        backBtn.style.display = 'none';
+        titleEl.textContent = '青森市 除排雪スケジュールマップ';
+        if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+      } else if (view === 'map') {
+        document.getElementById('main').style.display = 'flex';
+        document.getElementById('sos-btn').style.display = 'flex';
+        backBtn.style.display = 'block';
+        titleEl.textContent = '除排雪マップ';
+        setTimeout(function() {
+          map.invalidateSize();
+          if (allLayers.length > 0 && !selectedLayer) {
+            const group = L.featureGroup(allLayers.map(l => l.layer));
+            if (group.getBounds().isValid()) {
+              map.fitBounds(group.getBounds(), { padding: [20, 20] });
+            }
+          }
+        }, 100);
+      } else if (view === 'dashboard') {
+        document.getElementById('dashboard-view').style.display = 'block';
+        backBtn.style.display = 'block';
+        titleEl.textContent = 'ダッシュボード';
+        renderDashboard();
+      } else if (view === 'navi') {
+        document.getElementById('navi-view').style.display = 'block';
+        backBtn.style.display = 'block';
+        titleEl.textContent = '安全ルート';
+        renderNaviView();
+      }
+      currentView = view;
+      window.scrollTo(0, 0);
+    };
+
+    function renderDashboard() {
+      const loadingEl = document.getElementById('dash-loading');
+      if (!dataReady) {
+        loadingEl.style.display = 'block';
+        return;
+      }
+      loadingEl.style.display = 'none';
+
+      const summaryEl = document.getElementById('summary');
+      const fmsEl = document.getElementById('fms-risk-panel');
+      const busEl = document.getElementById('bus-status');
+
+      var summaryHtml = summaryEl.innerHTML.replace(/onclick="filterByCard\(([^)]+)\)"/g, function(match, args) {
+        return 'onclick="switchView(\'map\');setTimeout(function(){filterByCard(' + args + ')},200)"';
+      });
+      document.getElementById('dash-summary').innerHTML =
+        '<div style="margin-bottom:16px"><h3 style="font-size:15px;color:#1a3a5c;margin-bottom:8px">除排雪サマリー</h3>' +
+        '<div style="font-size:11px;color:#888;margin-bottom:8px">カードをタップするとマップに遷移します</div>' +
+        summaryHtml + '</div>';
+
+      document.getElementById('dash-fms-risk').innerHTML =
+        '<div style="margin-bottom:16px"><h3 style="font-size:15px;color:#1a3a5c;margin-bottom:8px">市民報告リスク</h3>' +
+        fmsEl.innerHTML + '</div>';
+
+      document.getElementById('dash-bus-status').innerHTML =
+        '<div style="margin-bottom:16px"><h3 style="font-size:15px;color:#1a3a5c;margin-bottom:8px">バス運行状況</h3>' +
+        busEl.innerHTML + '</div>';
+    }
+
+    function renderNaviView() {
+      var loadingEl = document.getElementById('navi-loading');
+      if (!dataReady) {
+        loadingEl.style.display = 'block';
+        return;
+      }
+      loadingEl.style.display = 'none';
+      naviOriginArea = null;
+      naviDestArea = null;
+      naviGpsCoords = null;
+      pendingRouteResult = null;
+
+      var formHtml = '<div class="navi-form">';
+      formHtml += '<label>出発地</label>';
+      formHtml += '<div id="navi-gps-status" class="navi-gps-status">GPS取得中...</div>';
+      formHtml += '<input type="text" id="navi-origin" class="navi-input" placeholder="現在地を取得中..." readonly>';
+      formHtml += '<label>目的地</label>';
+      formHtml += '<div style="position:relative">';
+      formHtml += '<input type="text" id="navi-dest" class="navi-input" placeholder="工区名・路線名を入力">';
+      formHtml += '<div id="navi-dest-ac" class="navi-autocomplete"></div>';
+      formHtml += '</div>';
+      formHtml += '<button class="navi-search-btn" id="navi-search-btn" onclick="searchRoute()" disabled>ルート検索</button>';
+      formHtml += '</div>';
+      document.getElementById('navi-form-container').innerHTML = formHtml;
+      document.getElementById('navi-result-container').innerHTML = '';
+
+      requestNaviGps();
+      setupNaviAutocomplete();
+    }
+
+    function requestNaviGps() {
+      var statusEl = document.getElementById('navi-gps-status');
+      var originEl = document.getElementById('navi-origin');
+      if (!navigator.geolocation) {
+        statusEl.textContent = 'GPS非対応 - 出発地を手入力してください';
+        statusEl.className = 'navi-gps-status error';
+        originEl.removeAttribute('readonly');
+        originEl.placeholder = '出発エリア名を入力';
+        setupOriginAutocomplete();
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        naviGpsCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        var nearest = findNearestArea(naviGpsCoords.lat, naviGpsCoords.lng);
+        if (nearest) {
+          naviOriginArea = nearest;
+          originEl.value = nearest;
+          statusEl.textContent = 'GPS取得OK - 最寄りエリア: ' + nearest;
+          statusEl.className = 'navi-gps-status ok';
+          updateSearchBtnState();
+        } else {
+          statusEl.textContent = 'エリア特定失敗 - 出発地を手入力してください';
+          statusEl.className = 'navi-gps-status error';
+          originEl.removeAttribute('readonly');
+          originEl.placeholder = '出発エリア名を入力';
+          setupOriginAutocomplete();
+        }
+      }, function() {
+        statusEl.textContent = 'GPS取得失敗 - 出発地を手入力してください';
+        statusEl.className = 'navi-gps-status error';
+        originEl.removeAttribute('readonly');
+        originEl.placeholder = '出発エリア名を入力';
+        setupOriginAutocomplete();
+      }, { timeout: 10000, maximumAge: 60000 });
+    }
+
+    function findNearestArea(lat, lng) {
+      var minDist = Infinity;
+      var nearest = null;
+      Object.keys(areasMeta).forEach(function(name) {
+        var meta = areasMeta[name];
+        if (!meta || !meta.centroid) return;
+        var d = haversine(lat, lng, meta.centroid[1], meta.centroid[0]);
+        if (d < minDist) { minDist = d; nearest = name; }
+      });
+      return nearest;
+    }
+
+    function haversine(lat1, lng1, lat2, lng2) {
+      var R = 6371;
+      var dLat = (lat2 - lat1) * Math.PI / 180;
+      var dLng = (lng2 - lng1) * Math.PI / 180;
+      var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function setupOriginAutocomplete() {
+      var originEl = document.getElementById('navi-origin');
+      var names = Object.keys(areasMeta);
+      var acContainer = document.createElement('div');
+      acContainer.className = 'navi-autocomplete';
+      acContainer.id = 'navi-origin-ac';
+      originEl.parentNode.insertBefore(acContainer, originEl.nextSibling);
+
+      originEl.addEventListener('input', function() {
+        var val = originEl.value.trim();
+        acContainer.innerHTML = '';
+        if (!val) { acContainer.style.display = 'none'; return; }
+        var matches = names.filter(function(n) { return n.indexOf(val) !== -1; }).slice(0, 8);
+        if (matches.length === 0) { acContainer.style.display = 'none'; return; }
+        matches.forEach(function(m) {
+          var item = document.createElement('div');
+          item.className = 'navi-autocomplete-item';
+          item.textContent = m;
+          item.onclick = function() {
+            originEl.value = m;
+            naviOriginArea = m;
+            acContainer.style.display = 'none';
+            updateSearchBtnState();
+          };
+          acContainer.appendChild(item);
+        });
+        acContainer.style.display = 'block';
+      });
+    }
+
+    function setupNaviAutocomplete() {
+      var destEl = document.getElementById('navi-dest');
+      var acEl = document.getElementById('navi-dest-ac');
+      var names = Object.keys(areasMeta);
+
+      destEl.addEventListener('input', function() {
+        var val = destEl.value.trim();
+        acEl.innerHTML = '';
+        if (!val) { acEl.style.display = 'none'; return; }
+        var matches = names.filter(function(n) { return n.indexOf(val) !== -1; }).slice(0, 8);
+        if (matches.length === 0) { acEl.style.display = 'none'; return; }
+        matches.forEach(function(m) {
+          var item = document.createElement('div');
+          item.className = 'navi-autocomplete-item';
+          item.textContent = m;
+          item.onclick = function() {
+            destEl.value = m;
+            naviDestArea = m;
+            acEl.style.display = 'none';
+            updateSearchBtnState();
+          };
+          acEl.appendChild(item);
+        });
+        acEl.style.display = 'block';
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('#navi-dest') && !e.target.closest('#navi-dest-ac')) {
+          acEl.style.display = 'none';
+        }
+      });
+    }
+
+    function updateSearchBtnState() {
+      var btn = document.getElementById('navi-search-btn');
+      if (btn) btn.disabled = !(naviOriginArea && naviDestArea);
+    }
+
+    function computeRiskWeight(areaName) {
+      var risk = fmsRisk[areaName];
+      if (!risk) return 1;
+      var w = 1
+        + (risk.stacked || 0) * 5
+        + (risk.near_stuck || risk.near_stack || 0) * 3
+        + (risk.passable_slow || 0) * 1
+        - (risk.resolved || 0) * 0.5
+        + (risk.days_since_snow || 0) * 0.5;
+      return Math.max(1, w);
+    }
+
+    function dijkstra(start, end) {
+      if (!areasMeta[start] || !areasMeta[end]) return null;
+      var dist = {};
+      var prev = {};
+      var visited = {};
+      var queue = [];
+      dist[start] = 0;
+      queue.push({ node: start, cost: 0 });
+
+      while (queue.length > 0) {
+        queue.sort(function(a, b) { return a.cost - b.cost; });
+        var current = queue.shift();
+        if (visited[current.node]) continue;
+        visited[current.node] = true;
+
+        if (current.node === end) break;
+
+        var meta = areasMeta[current.node];
+        if (!meta || !meta.neighbors) continue;
+
+        meta.neighbors.forEach(function(neighbor) {
+          if (visited[neighbor] || !areasMeta[neighbor]) return;
+          var w = computeRiskWeight(neighbor);
+          var newDist = dist[current.node] + w;
+          if (dist[neighbor] === undefined || newDist < dist[neighbor]) {
+            dist[neighbor] = newDist;
+            prev[neighbor] = current.node;
+            queue.push({ node: neighbor, cost: newDist });
+          }
+        });
+      }
+
+      if (dist[end] === undefined) return null;
+
+      var path = [];
+      var node = end;
+      while (node) {
+        path.unshift(node);
+        node = prev[node];
+      }
+      return { path: path, totalCost: dist[end] };
+    }
+
+    window.searchRoute = function searchRoute() {
+      if (!naviOriginArea || !naviDestArea) return;
+      var container = document.getElementById('navi-result-container');
+
+      if (naviOriginArea === naviDestArea) {
+        container.innerHTML = '<div class="navi-result"><h3>結果</h3><p>出発地と目的地が同じです。</p></div>';
+        return;
+      }
+
+      var result = dijkstra(naviOriginArea, naviDestArea);
+      if (!result) {
+        container.innerHTML = '<div class="navi-result"><h3>結果</h3><p>ルートが見つかりませんでした。接続されていないエリアの可能性があります。</p></div>';
+        return;
+      }
+
+      pendingRouteResult = result;
+      var html = '<div class="navi-result">';
+      html += '<h3>推奨ルート（' + result.path.length + 'エリア経由）</h3>';
+
+      result.path.forEach(function(area, i) {
+        var w = computeRiskWeight(area);
+        var color = getSegmentColor(w);
+        var label = getRiskLabel(w);
+        html += '<div class="navi-route-step">';
+        html += '<div class="step-dot" style="background:' + color + '"></div>';
+        html += '<span>' + (i === 0 ? '出発: ' : i === result.path.length - 1 ? '目的地: ' : '') + area + '</span>';
+        html += '<span class="step-risk" style="background:' + color + '">' + label + '</span>';
+        html += '</div>';
+      });
+
+      html += '<div style="margin-top:10px;font-size:12px;color:#888">合計リスクスコア: ' + result.totalCost.toFixed(1) + '</div>';
+      html += '<button class="navi-show-map-btn" onclick="showRouteOnMap()">マップで表示</button>';
+      html += '</div>';
+      container.innerHTML = html;
+    };
+
+    function buildRouteLayer(result) {
+      if (routeLayer) { map.removeLayer(routeLayer); }
+      routeLayer = L.layerGroup();
+
+      var path = result.path;
+      for (var i = 0; i < path.length - 1; i++) {
+        var fromMeta = areasMeta[path[i]];
+        var toMeta = areasMeta[path[i + 1]];
+        if (!fromMeta || !fromMeta.centroid || !toMeta || !toMeta.centroid) continue;
+        var w = computeRiskWeight(path[i + 1]);
+        var color = getSegmentColor(w);
+        var line = L.polyline(
+          [[fromMeta.centroid[1], fromMeta.centroid[0]], [toMeta.centroid[1], toMeta.centroid[0]]],
+          { color: color, weight: 5, opacity: 0.85 }
+        );
+        routeLayer.addLayer(line);
+      }
+
+      // 出発マーカー
+      var startMeta = areasMeta[path[0]];
+      if (startMeta && startMeta.centroid) {
+        var startMarker = L.marker([startMeta.centroid[1], startMeta.centroid[0]], {
+          icon: L.divIcon({ className: '', html: '<div style="background:#1a3a5c;color:#fff;padding:3px 8px;border-radius:10px;font-size:11px;font-weight:bold;white-space:nowrap">出発</div>', iconSize: [0, 0], iconAnchor: [-5, 10] })
+        });
+        routeLayer.addLayer(startMarker);
+      }
+
+      // 目的地マーカー
+      var endMeta = areasMeta[path[path.length - 1]];
+      if (endMeta && endMeta.centroid) {
+        var endMarker = L.marker([endMeta.centroid[1], endMeta.centroid[0]], {
+          icon: L.divIcon({ className: '', html: '<div style="background:#e74c3c;color:#fff;padding:3px 8px;border-radius:10px;font-size:11px;font-weight:bold;white-space:nowrap">目的地</div>', iconSize: [0, 0], iconAnchor: [-5, 10] })
+        });
+        routeLayer.addLayer(endMarker);
+      }
+
+      routeLayer.addTo(map);
+    }
+
+    window.showRouteOnMap = function showRouteOnMap() {
+      if (!pendingRouteResult) return;
+      buildRouteLayer(pendingRouteResult);
+
+      // fitBounds
+      var bounds = [];
+      pendingRouteResult.path.forEach(function(area) {
+        var meta = areasMeta[area];
+        if (meta && meta.centroid) bounds.push([meta.centroid[1], meta.centroid[0]]);
+      });
+      if (bounds.length > 0) {
+        switchView('map');
+        setTimeout(function() {
+          map.fitBounds(bounds, { padding: [40, 40] });
+        }, 200);
+      }
+    };
+
+    function getSegmentColor(weight) {
+      if (weight <= 2) return '#27ae60';
+      if (weight <= 5) return '#f1c40f';
+      if (weight <= 10) return '#e67e22';
+      return '#e74c3c';
+    }
+
+    function getRiskLabel(weight) {
+      if (weight <= 2) return '安全';
+      if (weight <= 5) return '注意';
+      if (weight <= 10) return '要注意';
+      return '危険';
+    }
 
     // スタイル（初期表示は無色、フィルター選択時のみ着色）
     function neutralStyle(feature) {
@@ -1064,16 +1945,25 @@
 
       // FMSリスク（直近7日間の市民報告）
       const risk = fmsRisk[props['名前']];
+      const operatorMoodArea = window.FaceScore ? window.FaceScore.getOperatorMoodForArea(props['名前'], xPostsData) : { available: false };
       if (risk && risk.total > 0) {
         const stuckLabel = risk.stuck_total > 0
           ? `<span style="color:#c0392b;font-weight:bold">⚠ ${risk.stuck_total}件</span>`
           : '<span style="color:#27ae60">0件</span>';
         const periodText = risk.days_since_snow != null ? `除雪${risk.days_since_snow}日前` : '直近7日間';
+        const areaFace = window.FaceScore ? window.FaceScore.getAreaFace(risk) : { available: false };
         html += `<div class="detail-row"><span class="label">市民報告(7日)</span><span class="value">${risk.total}件（${periodText}）</span></div>`;
         html += `<div class="detail-row"><span class="label">スタック関連</span><span class="value">${stuckLabel}</span></div>`;
+        if (areaFace.available) {
+          const confidence = areaFace.confidence === 'low' ? ' / 参考値' : '';
+          html += `<div class="detail-row"><span class="label">市民の表情</span><span class="value" style="color:${areaFace.color};font-weight:bold">${areaFace.emoji} ${areaFace.label}（${areaFace.scoreText}${confidence}）</span></div>`;
+        }
         if (risk.resolved > 0) {
           html += `<div class="detail-row"><span class="label">改善報告</span><span class="value" style="color:#27ae60">${risk.resolved}件</span></div>`;
         }
+      }
+      if (operatorMoodArea.available) {
+        html += `<div class="detail-row"><span class="label">除雪業者（この工区）</span><span class="value" style="color:${operatorMoodArea.color};font-weight:bold">${operatorMoodArea.emoji} ${operatorMoodArea.label}</span></div>`;
       }
 
       // 空間情報（メタデータ）
@@ -1090,6 +1980,16 @@
       }
 
       html += '</div>';
+
+      // 共有ボタン
+      const nameForShare = (props['名前'] || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+      html += `<button class="share-btn" data-area="${nameForShare}" onclick="shareArea(this.dataset.area)">𝕏 Xで共有</button>`;
+
+      // 路面状況予測カード
+      const pred = roadPredictions[props['名前']];
+      if (pred && window.RoadSVG) {
+        html += window.RoadSVG.renderRoadConditionCard(pred);
+      }
 
       document.getElementById('selected-info').innerHTML = html;
       showXPosts(props['名前']);
@@ -1179,50 +2079,6 @@
       container.innerHTML = html;
     }
 
-    // 全体の通行リスクサマリー（折りたたみ）
-    function showUnmatchedPosts() {
-      const container = document.getElementById('x-unmatched');
-      if (xPostsData.length === 0) { container.innerHTML = ''; return; }
-
-      const total = xPostsData.length;
-      const withArea = xPostsData.filter(p => p.area && p.area.length > 0).length;
-      const counts = countRisks(xPostsData);
-      const stuckTotal = (counts.stacked || 0) + (counts.near_stack || 0);
-      const resolvedCount = counts.resolved || 0;
-      const resolvedPct = total > 0 ? Math.round(resolvedCount / total * 100) : 0;
-
-      let html = '<div class="x-posts-section">';
-      html += '<div class="collapsible-header" onclick="toggleUnmatched()">';
-      html += `<h4 style="margin:0">通行リスク観測（${total}件）`;
-      if (stuckTotal > 0) html += ` <span style="background:#c0392b;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px">⚠${stuckTotal}</span>`;
-      html += '</h4>';
-      html += '<span class="toggle" id="unmatched-toggle">▼ 開く</span>';
-      html += '</div>';
-      html += '<div class="collapsible-body collapsed" id="unmatched-body">';
-
-      html += renderRiskBars(counts, total, 11);
-
-      html += '<div style="border-top:1px solid #eee;margin-top:6px;padding-top:6px;font-size:11px;color:#666">';
-      html += `改善シグナル率: <b style="color:#27ae60">${resolvedPct}%</b>（${resolvedCount}/${total}件）`;
-      html += `<br>エリア特定率: ${Math.round(withArea / total * 100)}%（${withArea}/${total}件）`;
-      html += '</div>';
-
-      html += '<div style="font-size:10px;color:#aaa;margin-top:4px">SNS投稿を統計化。原文は公開していません。</div>';
-      html += '</div></div>';
-      container.innerHTML = html;
-    }
-
-    window.toggleUnmatched = function() {
-      const body = document.getElementById('unmatched-body');
-      const toggle = document.getElementById('unmatched-toggle');
-      if (body.classList.contains('collapsed')) {
-        body.classList.remove('collapsed');
-        toggle.textContent = '▲ 閉じる';
-      } else {
-        body.classList.add('collapsed');
-        toggle.textContent = '▼ 開く';
-      }
-    };
 
     // フィーチャークリック
     function onFeatureClick(e) {
@@ -1236,6 +2092,18 @@
       selectedLayer = layer;
       layer.setStyle(highlightStyle(feature));
       showDetail(feature.properties);
+
+      // マップ上にポップアップで工区情報を表示
+      const props = feature.properties;
+      const cls = classifyStatus(props['ステータス']);
+      const cfg = STATUS_CONFIG[cls];
+      const dateText = props['直近作業予定日'] || '未定';
+      let popupHtml = `<div style="min-width:160px">`;
+      popupHtml += `<div style="font-size:13px;font-weight:bold;color:#1a3a5c;margin-bottom:4px">${props['名前'] || '不明'}</div>`;
+      popupHtml += `<div style="margin-bottom:4px"><span style="background:${cfg.bg};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold">${cfg.label}</span></div>`;
+      popupHtml += `<div style="font-size:12px">予定日: ${dateText}</div>`;
+      popupHtml += `</div>`;
+      L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(map);
     }
 
     // エリアリストはサマリーカードクリックで動的生成（filterByCard内）
@@ -1275,6 +2143,83 @@
       if (layer.getBounds) {
         map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 15 });
       }
+      // URLバーを更新
+      const url = new URL(window.location);
+      url.searchParams.set('area', name);
+      history.replaceState(null, '', url);
+    };
+
+    // Xで共有
+    // ヘッダーナビメニュー
+    window.toggleNavMenu = function(e) {
+      e.stopPropagation();
+      var menu = document.getElementById('nav-menu');
+      // 現在のビューをハイライト
+      menu.querySelectorAll('a').forEach(function(a) { a.classList.remove('nav-active'); });
+      var viewMap = {'hub':0,'map':1,'sos':2,'navi':3,'dashboard':4};
+      var idx = viewMap[currentView];
+      if (idx !== undefined) menu.querySelectorAll('a')[idx].classList.add('nav-active');
+      menu.classList.toggle('open');
+      document.getElementById('share-menu').classList.remove('open');
+    };
+    window.navTo = function(view, e) {
+      e.preventDefault();
+      document.getElementById('nav-menu').classList.remove('open');
+      switchView(view);
+    };
+    // サイト共有メニュー
+    window.toggleShareMenu = function(e) {
+      e.stopPropagation();
+      document.getElementById('nav-menu').classList.remove('open');
+      var menu = document.getElementById('share-menu');
+      menu.classList.toggle('open');
+    };
+
+    // メニューを閉じる（ナビ・共有共通）
+    document.addEventListener('click', function() {
+      document.getElementById('nav-menu').classList.remove('open');
+      document.getElementById('share-menu').classList.remove('open');
+    });
+
+    window.shareTo = function(platform, e) {
+      e.preventDefault();
+      document.getElementById('share-menu').classList.remove('open');
+      var url = 'https://aomori-snow-tracker.web.app/';
+      var text = '青森除雪ウォッチ — 青森市の除排雪スケジュールをリアルタイムで地図表示 #青森市 #除雪';
+      switch (platform) {
+        case 'x':
+          window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text + '\n' + url), '_blank', 'noopener');
+          break;
+        case 'fb':
+          window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url), '_blank', 'noopener');
+          break;
+        case 'line':
+          window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text), '_blank', 'noopener');
+          break;
+        case 'copy':
+          navigator.clipboard.writeText(url).then(function() {
+            alert('URLをコピーしました');
+          });
+          break;
+      }
+    };
+
+    // エリア個別のX共有
+    window.shareArea = function(name) {
+      const item = allLayers.find(l => l.feature.properties['名前'] === name);
+      if (!item) return;
+      const props = item.feature.properties;
+      const status = props['ステータス'] || '不明';
+      const date = props['直近作業予定日'] || '未定';
+      const risk = fmsRisk[name];
+      const stuckCount = risk ? risk.stuck_total : 0;
+
+      const deepLink = new URL(window.location);
+      deepLink.searchParams.set('area', name);
+
+      const text = `【${name}】${status}（${date}）\nスタック関連: ${stuckCount}件\n#青森除雪ウォッチ #青森市\n${deepLink.href}`;
+      const intentUrl = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
+      window.open(intentUrl, '_blank', 'noopener');
     };
 
     // サマリー表示（工区・路線別、母数付き、クリックでフィルター＋一覧表示）
@@ -1437,16 +2382,23 @@
       document.getElementById('area-list-section').style.display = 'none';
 
       // バスレイヤー非表示
-      if (busLayersVisible) {
-        busLayers.forEach(({ line, dash, stops }) => {
-          map.removeLayer(line);
-          map.removeLayer(dash);
-          stops.forEach(m => map.removeLayer(m));
-        });
+      if (layerVisibility.bus) {
+        layerVisibility.bus = false;
+        map.removeLayer(busLayer);
         busLayersVisible = false;
         const btn = document.getElementById('bus-map-toggle');
         if (btn) { btn.textContent = '🗺 地図に表示'; btn.style.background = '#f59e0b'; }
+        updateToggleCheckbox('bus');
       }
+
+      // 他レイヤーを表示状態に復帰
+      ['dump', 'ryusetsuko', 'kokudo', 'support'].forEach(key => {
+        if (!layerVisibility[key]) {
+          layerVisibility[key] = true;
+          layerGroupMap[key].addTo(map);
+          updateToggleCheckbox(key);
+        }
+      });
 
       // 選択解除
       if (selectedLayer) {
@@ -1461,35 +2413,136 @@
         layer.setStyle(neutralStyle(feature));
       });
 
-      // 地図を全体表示
-      if (allLayers.length > 0) {
-        const group = L.featureGroup(allLayers.map(l => l.layer));
-        if (group.getBounds().isValid()) {
-          map.fitBounds(group.getBounds(), { padding: [20, 20] });
-        }
-      }
+      // 地図を市街地表示（浪岡を除く）
+      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
       // パネル先頭にスクロール
       document.getElementById('panel-content').scrollTop = 0;
     };
 
     // 凡例
-    const legend = L.control({ position: 'bottomleft' });
+    const legend = L.control({ position: 'topleft' });
+    var legendDiv = null;
     legend.onAdd = function() {
-      const div = L.DomUtil.create('div', 'legend');
-      div.innerHTML += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#dc2626"></span> バス運休区間 <span style="font-size:9px;color:#aaa">※下部で表示</span></div>';
-      div.innerHTML += '<div class="legend-item"><span style="display:inline-block;width:14px;height:14px;background:#dc2626;border-radius:50%;border:2px solid #fff;box-shadow:0 0 6px rgba(220,38,38,0.6);flex-shrink:0"></span> SOS発信中</div>';
-      div.innerHTML += '<div style="border-top:1px solid #ddd;margin:4px 0;padding-top:4px;font-size:10px;color:#888">国道（国交省）</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
-      div.innerHTML += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済み</div>';
-      return div;
+      legendDiv = L.DomUtil.create('div', 'legend');
+      L.DomEvent.disableClickPropagation(legendDiv);
+      updateLegend();
+      return legendDiv;
     };
+    function updateLegend() {
+      if (!legendDiv) return;
+      var html = '';
+      // 雪捨て場（dump）
+      if (layerVisibility.dump) {
+        html += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:10px;height:10px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
+      }
+      // バス運休（bus）
+      if (layerVisibility.bus) {
+        html += '<div class="legend-item"><span class="legend-color" style="background:#dc2626"></span> バス運休</div>';
+      }
+      // 流雪溝（ryusetsuko）
+      if (layerVisibility.ryusetsuko) {
+        html += '<div class="legend-section">流雪溝</div>';
+        html += '<div class="legend-item"><span style="background:#3498db;color:#fff;width:10px;height:10px;border-radius:50%;font-size:6px;flex-shrink:0"></span> ポンプ場</div>';
+        html += '<div class="legend-item"><span style="background:#e67e22;width:10px;height:10px;border-radius:50%;flex-shrink:0"></span> 排水</div>';
+        html += '<div class="legend-item"><span style="background:#9b59b6;width:10px;height:10px;border-radius:50%;flex-shrink:0"></span> 取水</div>';
+      }
+      // 国道（kokudo）
+      if (layerVisibility.kokudo) {
+        html += '<div class="legend-section">国道</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済</div>';
+      }
+      // 応援除雪（support）
+      if (layerVisibility.support) {
+        html += '<div class="legend-section">応援除雪</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#2e7d32"></span>作業予定</div>';
+      }
+      legendDiv.innerHTML = html || '<span style="color:#aaa">凡例なし</span>';
+    }
     legend.addTo(map);
 
-    // データ読み込み
+    // レイヤーコントロール（パネル内に配置）
+    function renderPanelLayerControl() {
+      const container = document.getElementById('panel-layer-control');
+      if (!container) return;
+
+      let html = '<div class="layer-control" style="box-shadow:none;margin-bottom:10px">';
+      html += '<div class="layer-control-header" id="panel-lc-header">';
+      html += '🗂 レイヤー <span style="font-size:10px">▼</span></div>';
+      html += '<div class="layer-control-body" id="panel-lc-body">';
+
+      const layers = [
+        { key: 'dump', label: '雪捨て場', icon: '<span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px">&#10052;</span>' },
+        { key: 'ryusetsuko', label: '流雪溝施設', icon: '<span style="background:#3498db;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px">💧</span>' },
+        { key: 'kokudo', label: '国道除雪状況', icon: '<span style="display:inline-block;width:14px;height:4px;background:#f1c40f;border-radius:2px"></span>' },
+        { key: 'bus', label: 'バス運休区間', icon: '<span style="display:inline-block;width:14px;height:4px;background:#dc2626;border-radius:2px"></span>' },
+        { key: 'support', label: '応援除雪(県)', icon: '<span style="display:inline-block;width:14px;height:14px;background:#2e7d32;opacity:0.5;border:1px solid #2e7d32;border-radius:2px"></span>' },
+      ];
+
+      layers.forEach(function({ key, label, icon }) {
+        const checked = layerVisibility[key] ? 'checked' : '';
+        html += '<div class="layer-control-item">';
+        html += '<input type="checkbox" id="layer-cb-' + key + '" ' + checked + ' onchange="toggleLayer(\'' + key + '\')">';
+        html += '<label for="layer-cb-' + key + '">' + icon + ' ' + label + '</label>';
+        html += '</div>';
+      });
+
+      html += '</div></div>';
+      container.innerHTML = html;
+
+      document.getElementById('panel-lc-header').addEventListener('click', function() {
+        const body = document.getElementById('panel-lc-body');
+        const header = document.getElementById('panel-lc-header');
+        body.classList.toggle('hidden');
+        header.classList.toggle('collapsed');
+        header.querySelector('span').textContent = body.classList.contains('hidden') ? '▶' : '▼';
+      });
+    }
+    renderPanelLayerControl();
+
+    // レイヤートグル関数
+    window.toggleLayer = function(key) {
+      layerVisibility[key] = !layerVisibility[key];
+      const group = layerGroupMap[key];
+      if (layerVisibility[key]) {
+        group.addTo(map);
+      } else {
+        map.removeLayer(group);
+      }
+      // チェックボックス・凡例を同期
+      updateToggleCheckbox(key);
+      updateLegend();
+      // バスの場合はパネルボタンも同期
+      if (key === 'bus') {
+        busLayersVisible = layerVisibility.bus;
+        const btn = document.getElementById('bus-map-toggle');
+        if (btn) {
+          if (busLayersVisible) {
+            btn.textContent = '🗺 地図から非表示';
+            btn.style.background = '#dc2626';
+          } else {
+            btn.textContent = '🗺 地図に表示';
+            btn.style.background = '#f59e0b';
+          }
+        }
+      }
+    };
+
+    function updateToggleCheckbox(key) {
+      const cb = document.getElementById('layer-cb-' + key);
+      if (cb) cb.checked = layerVisibility[key];
+    }
+
+    // データ読み込み（キャッシュ回避）
+    const _cacheBuster = '_t=' + Date.now();
+    function freshFetch(url) {
+      const sep = url.includes('?') ? '&' : '?';
+      return fetch(url + sep + _cacheBuster);
+    }
+
     function loadGeoJSON(url) {
-      return fetch(url)
+      return freshFetch(url)
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => data.features || [])
         .catch(err => { console.warn(url, err); return []; });
@@ -1497,7 +2550,7 @@
 
     // X投稿データ読み込み
     function loadXPosts() {
-      return fetch('data/x_posts.json')
+      return freshFetch('data/x_posts.json')
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { xPostsData = data.posts || []; })
         .catch(err => { console.warn('X投稿データ読み込み失敗:', err); xPostsData = []; });
@@ -1505,15 +2558,23 @@
 
     // 雪捨て場データ読み込み
     function loadDumpSites() {
-      return fetch('data/snow_dump_sites.json')
+      return freshFetch('data/snow_dump_sites.json')
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { dumpSites = data.sites || []; })
         .catch(err => { console.warn('雪捨て場データ読み込み失敗:', err); dumpSites = []; });
     }
 
+    // 流雪溝施設データ読み込み
+    function loadRyusetsuko() {
+      return freshFetch('data/ryusetsuko.geojson')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => { ryusetsukoData = (data && data.features) || []; })
+        .catch(err => { console.warn('流雪溝データ読み込み失敗:', err); ryusetsukoData = []; });
+    }
+
     // FMSリスクデータ読み込み
     function loadFmsRisk() {
-      return fetch('data/fms_risk.json')
+      return freshFetch('data/fms_risk.json')
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { fmsRisk = (data && data.areas) || {}; })
         .catch(err => { console.warn('FMSリスク読み込み失敗:', err); fmsRisk = {}; });
@@ -1521,7 +2582,7 @@
 
     // 前日サマリー読み込み
     function loadPrevSummary() {
-      return fetch('data/prev_summary.json')
+      return freshFetch('data/prev_summary.json')
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { prevSummary = data || null; })
         .catch(err => { console.warn('前日サマリー読み込み失敗:', err); prevSummary = null; });
@@ -1529,7 +2590,7 @@
 
     // FMS投稿数読み込み
     function loadFmsCounts() {
-      return fetch('data/fms_counts.json')
+      return freshFetch('data/fms_counts.json')
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { fmsCounts = data || {}; })
         .catch(err => { console.warn('FMSデータ読み込み失敗:', err); fmsCounts = {}; });
@@ -1537,10 +2598,18 @@
 
     // 国道除雪状況データ読み込み
     function loadKokudoStatus() {
-      return fetch('data/kokudo_status.geojson')
+      return freshFetch('data/kokudo_status.geojson')
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { kokudoFeatures = data.features || []; })
         .catch(err => { console.warn('国道除雪状況読み込み失敗:', err); kokudoFeatures = []; });
+    }
+
+    // 応援除雪工区データ読み込み
+    function loadSupportZones() {
+      return freshFetch('data/support_zones.geojson')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => { supportZones = data.features || []; })
+        .catch(err => { console.warn('応援除雪工区読み込み失敗:', err); supportZones = []; });
     }
 
     // FMSリスクパネル表示
@@ -1562,6 +2631,7 @@
       const rosenAreas = areas.filter(([, d]) => d.category === 'rosen');
       const stuckAreas = areas.filter(([, d]) => d.stuck_total > 0);
       const totalReports = areas.reduce((s, [, d]) => s + d.total, 0);
+      const operatorMood = window.FaceScore ? window.FaceScore.getOperatorMood(xPostsData) : { available: false };
 
       let html = '<div class="bus-section">';
       html += `<h4 style="cursor:pointer;user-select:none" onclick="document.getElementById('fms-risk-detail').style.display=document.getElementById('fms-risk-detail').style.display==='none'?'block':'none'">`;
@@ -1570,24 +2640,37 @@
         html += ` <span style="background:#c0392b;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px">⚠${stuckAreas.length}</span>`;
       }
       html += ' <span style="font-size:11px;color:#888">▶</span></h4>';
-      html += `<div style="font-size:10px;color:#aaa;margin-bottom:4px">工区${kokuAreas.length} / 路線${rosenAreas.length}　※解決済みも含む7日間の記録</div>`;
+      html += `<div style="font-size:10px;color:#aaa;margin-bottom:4px">工区${kokuAreas.length} / 路線${rosenAreas.length}　※直近7日間を毎日更新（古い投稿は自動で入れ替わります）</div>`;
+      if (operatorMood.available) {
+        const confidence = operatorMood.confidence === 'low' ? '・参考値' : '';
+        html += `<div style="font-size:11px;margin-bottom:6px;color:${operatorMood.color};font-weight:bold">除雪業者ムード（全体）: ${operatorMood.emoji} ${operatorMood.label} <span style="font-weight:normal;color:#888">対象${operatorMood.total}件${confidence}</span></div>`;
+      }
       html += '<div id="fms-risk-detail" style="display:none">';
 
       function renderAreaCard(name, data) {
         const hasStuck = data.stuck_total > 0;
         const borderColor = hasStuck ? '#c0392b' : '#e5e7eb';
-        const escapedName = name.replace(/'/g, "\\'");
+        const safeNameAttr = name.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
         const catLabel = data.category === 'koku' ? '工区' : '路線';
         const catColor = data.category === 'koku' ? '#1a3a5c' : '#6b7280';
         const snowText = data.days_since_snow != null ? `除雪${data.days_since_snow}日前` : '除雪日不明';
+        const face = window.FaceScore ? window.FaceScore.getAreaFace(data) : { available: false };
+        const operatorMoodLocal = window.FaceScore ? window.FaceScore.getOperatorMoodForArea(name, xPostsData) : { available: false };
+        const faceChip = face.available
+          ? `<span style="display:inline-block;background:${face.color};color:#fff;font-size:9px;border-radius:10px;padding:1px 6px;margin-left:6px">${face.emoji} ${face.scoreText}</span>`
+          : '';
 
-        let card = `<div style="border:1px solid ${borderColor};border-radius:6px;padding:8px;margin-bottom:6px;cursor:pointer;${hasStuck ? 'background:#fef2f2' : ''}" onclick="selectAreaByName('${escapedName}')">`;
+        let card = `<div style="border:1px solid ${borderColor};border-radius:6px;padding:8px;margin-bottom:6px;cursor:pointer;${hasStuck ? 'background:#fef2f2' : ''}" data-area="${safeNameAttr}" onclick="selectAreaByName(this.dataset.area)">`;
         card += `<div style="font-size:12px;font-weight:bold;color:${catColor};margin-bottom:3px">`;
         card += `<span style="font-size:9px;background:${catColor};color:#fff;padding:1px 5px;border-radius:4px;margin-right:4px">${catLabel}</span>`;
         card += name;
+        card += faceChip;
         card += `<span style="font-size:10px;color:#888;font-weight:normal;margin-left:6px">${snowText}</span>`;
         card += ' <span style="font-size:10px;color:#3498db">▶ 地図で見る</span>';
         card += '</div>';
+        if (operatorMoodLocal.available) {
+          card += `<div style="font-size:10px;color:${operatorMoodLocal.color};margin-bottom:3px">除雪業者: ${operatorMoodLocal.emoji} ${operatorMoodLocal.label}</div>`;
+        }
 
         const riskItems = [
           ['スタック', data.risk.stacked, '#c0392b'],
@@ -1625,7 +2708,7 @@
 
     // 市営バス運行状況データ読み込み
     function loadBusStatus() {
-      return fetch('data/bus_status.json')
+      return freshFetch('data/bus_status.json')
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { busStatusData = data || null; })
         .catch(err => { console.warn('バス運行状況データ読み込み失敗:', err); busStatusData = null; });
@@ -1633,7 +2716,7 @@
 
     // バス運休路線GeoJSON読み込み
     function loadBusSuspended() {
-      return fetch('data/bus_suspended.geojson')
+      return freshFetch('data/bus_suspended.geojson')
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { busSuspendedData = data || null; })
         .catch(err => { console.warn('バス運休路線データ読み込み失敗:', err); busSuspendedData = null; });
@@ -1654,25 +2737,9 @@
       return html;
     }
 
-    // バス運休路線の地図表示トグル
+    // バス運休路線の地図表示トグル（パネルボタンから呼ばれる）
     window.toggleBusLayers = function() {
-      busLayersVisible = !busLayersVisible;
-      const btn = document.getElementById('bus-map-toggle');
-      if (busLayersVisible) {
-        busLayers.forEach(({ line, dash, stops }) => {
-          line.addTo(map);
-          dash.addTo(map);
-          stops.forEach(m => m.addTo(map));
-        });
-        if (btn) { btn.textContent = '🗺 地図から非表示'; btn.style.background = '#dc2626'; }
-      } else {
-        busLayers.forEach(({ line, dash, stops }) => {
-          map.removeLayer(line);
-          map.removeLayer(dash);
-          stops.forEach(m => map.removeLayer(m));
-        });
-        if (btn) { btn.textContent = '🗺 地図に表示'; btn.style.background = '#f59e0b'; }
-      }
+      toggleLayer('bus');
     };
 
     function showBusStatus() {
@@ -1682,8 +2749,14 @@
         return;
       }
 
+      // resumed のうち type 付き（実際はまだ運休/迂回中）を continuing 側に振り分け
+      const rawResumed = busStatusData.resumed || [];
+      const trueResumed = rawResumed.filter(r => !r.type);
+      const falseResumed = rawResumed.filter(r => r.type);
+      const effectiveContinuing = [...(busStatusData.continuing || []), ...falseResumed];
+
       // 運休件数をカウント
-      const issueCount = (busStatusData.new_info || []).length + (busStatusData.continuing || []).length;
+      const issueCount = (busStatusData.new_info || []).length + effectiveContinuing.length;
       const badge = issueCount > 0 ? ` <span class="bus-badge">${issueCount}</span>` : '';
       const hasSuspended = busLayers.length > 0;
 
@@ -1704,8 +2777,8 @@
       }
 
       html += renderBusList('新着情報', busStatusData.new_info, true);
-      html += renderBusList('運休解除（通常運行）', busStatusData.resumed, false);
-      html += renderBusList('運休・迂回継続', busStatusData.continuing, true);
+      html += renderBusList('運休解除（通常運行）', trueResumed, false);
+      html += renderBusList('運休・迂回継続', effectiveContinuing, true);
 
       if (busStatusData.notes && busStatusData.notes.length > 0) {
         html += '<div class="bus-list"><div class="bus-list-title">備考</div>';
@@ -1718,13 +2791,14 @@
         html += '</div>';
       }
 
+      html += '<div style="font-size:10px;color:#aaa;margin-top:8px">出典: <a href="https://aomori100.shizentai.jp/oshirase/oshirase.html" target="_blank" rel="noopener" style="color:#aaa">青森市交通部 お知らせ</a></div>';
       html += '</div></div>';
       container.innerHTML = html;
     }
 
     // 工区メタデータ読み込み
     function loadAreasMeta() {
-      return fetch('data/areas_meta.json')
+      return freshFetch('data/areas_meta.json')
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { areasMeta = data.areas || {}; })
         .catch(err => { console.warn('メタデータ読み込み失敗:', err); areasMeta = {}; });
@@ -1736,13 +2810,20 @@
       loadXPosts(),
       loadAreasMeta(),
       loadDumpSites(),
+      loadRyusetsuko(),
       loadKokudoStatus(),
       loadFmsCounts(),
       loadFmsRisk(),
       loadPrevSummary(),
       loadBusStatus(),
       loadBusSuspended(),
+      loadSupportZones(),
     ]).then(([kokuFeatures, rosenFeatures]) => {
+      // 路面状況予測を計算
+      if (window.RoadPredict && fmsRisk) {
+        roadPredictions = window.RoadPredict.predictAllAreas(fmsRisk, areasMeta);
+      }
+
       const combined = [...kokuFeatures, ...rosenFeatures];
       allFeatures = combined;
 
@@ -1793,6 +2874,7 @@
       });
 
       // 雪捨て場マーカー表示
+      dumpSiteLayer.clearLayers();
       dumpSites.forEach(site => {
         if (site.lat == null || site.lng == null) return;
         const icon = L.divIcon({
@@ -1801,29 +2883,70 @@
           iconSize: [24, 24],
           iconAnchor: [12, 12],
         });
-        const marker = L.marker([site.lat, site.lng], { icon: icon }).addTo(map);
+        const marker = L.marker([site.lat, site.lng], { icon: icon });
         let popupHtml = `<b>${site.name}</b><br>`;
         popupHtml += `<span style="color:#666">${site.type}</span>`;
         if (site.hours) popupHtml += `<br>受入時間: ${site.hours}`;
         if (site.notes) popupHtml += `<br>${site.notes}`;
         marker.bindPopup(popupHtml);
         marker.bindTooltip(site.name, { direction: 'top', className: 'dump-tooltip' });
+        dumpSiteLayer.addLayer(marker);
       });
+      if (layerVisibility.dump) dumpSiteLayer.addTo(map);
+
+      // 流雪溝施設マーカー表示
+      ryusetsukoLayer.clearLayers();
+      ryusetsukoData.forEach(feature => {
+        const props = feature.properties;
+        const coords = feature.geometry.coordinates;
+        const func = props.function || '';
+        let cssClass = 'pump';
+        let emoji = '💧';
+        if (func.includes('排水')) { cssClass = 'drain'; emoji = '🔽'; }
+        else if (func.includes('取水') || func.includes('排湯')) { cssClass = 'intake'; emoji = '🔼'; }
+        const icon = L.divIcon({
+          className: '',
+          html: `<div class="ryusetsu-icon ${cssClass}">${emoji}</div>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        });
+        const marker = L.marker([coords[1], coords[0]], { icon: icon });
+        let popupHtml = `<b>${props.name}</b><br>`;
+        popupHtml += `<span style="color:#666">${props.category} / ${func}</span><br>`;
+        popupHtml += `系統: ${props.system}`;
+        if (props.note) popupHtml += `<br>${props.note}`;
+        popupHtml += `<br><span style="font-size:10px;color:#aaa">出典: ${props.source}</span>`;
+        marker.bindPopup(popupHtml);
+        marker.bindTooltip(props.name, { direction: 'top', className: 'ryusetsu-tooltip' });
+        ryusetsukoLayer.addLayer(marker);
+      });
+      if (layerVisibility.ryusetsuko) ryusetsukoLayer.addTo(map);
 
       // 国道除雪状況レイヤー表示
+      kokudoLayer.clearLayers();
       kokudoFeatures.forEach(feature => {
         const color = feature.properties.color || '#999';
         const status = feature.properties.status || '';
-        const layer = L.geoJSON(feature, {
+        const lyr = L.geoJSON(feature, {
           style: { color: color, weight: 5, opacity: 0.8 },
-        }).addTo(map);
-        layer.bindPopup(`<b>国道区間 #${feature.properties.id}</b><br>状況: ${status}<br><span style="color:#888;font-size:11px">${feature.properties.source}</span>`);
-        layer.bindTooltip(status, { sticky: true, direction: 'top' });
+        });
+        lyr.bindPopup(`<b>国道区間 #${feature.properties.id}</b><br>状況: ${status}<br><span style="color:#888;font-size:11px">${feature.properties.source}</span>`);
+        lyr.bindTooltip(status, { sticky: true, direction: 'top' });
+        kokudoLayer.addLayer(lyr);
       });
+      if (layerVisibility.kokudo) kokudoLayer.addTo(map);
 
       // バス運休路線レイヤー準備（初期非表示）
+      // bus_status.json の resumed のうち、type が無い（本当に通常運行に戻った）路線のみ除外
+      const resumedRoutes = (busStatusData && busStatusData.resumed)
+        ? busStatusData.resumed.filter(r => !r.type).map(r => r.route)
+        : [];
+      busLayer.clearLayers();
+      busLayers = [];
       if (busSuspendedData && busSuspendedData.features) {
-        busSuspendedData.features.forEach(feature => {
+        busSuspendedData.features.filter(feature => {
+          return !resumedRoutes.some(route => feature.properties.name.includes(route));
+        }).forEach(feature => {
           const props = feature.properties;
           // 運休区間ライン（赤太線 + 白破線で❌感）
           const busLine = L.geoJSON(feature, {
@@ -1850,7 +2973,6 @@
           busLine.bindTooltip(`❌ ${props.name}（${props.status}）`, { sticky: true, direction: 'top' });
 
           // 停留所❌マーカー
-          const stopMarkers = [];
           if (props.stops) {
             props.stops.forEach(stop => {
               const icon = L.divIcon({
@@ -1861,17 +2983,38 @@
               });
               const m = L.marker([stop.lat, stop.lng], { icon: icon });
               m.bindTooltip(`❌ ${stop.name}（運休中）`, { direction: 'top', className: 'dump-tooltip' });
-              stopMarkers.push(m);
+              busLayer.addLayer(m);
             });
           }
 
-          busLayers.push({ line: busLine, dash: busDash, stops: stopMarkers });
+          busLayer.addLayer(busLine);
+          busLayer.addLayer(busDash);
+          busLayers.push({ line: busLine, dash: busDash });
         });
       }
+      // バスは初期非表示（layerVisibility.bus = false）
+
+      // 応援除雪工区レイヤー表示
+      supportLayer.clearLayers();
+      supportZones.forEach(feature => {
+        const props = feature.properties;
+        const status = props.status || '未定';
+        let fillColor = '#ccc';
+        let fillOpacity = 0.08;
+        let weight = 0.5;
+        if (status === '作業予定') { fillColor = '#2e7d32'; fillOpacity = 0.35; weight = 2; }
+        else if (status === '作業終了') { fillColor = '#ccc'; fillOpacity = 0.08; }
+        else { fillColor = '#ccc'; fillOpacity = 0.08; }
+        const lyr = L.geoJSON(feature, {
+          style: { color: fillColor, weight: weight, fillColor: fillColor, fillOpacity: fillOpacity },
+          interactive: false,
+        });
+        supportLayer.addLayer(lyr);
+      });
+      if (layerVisibility.support) supportLayer.addTo(map);
 
       buildSummary(kokuFeatures, rosenFeatures);
       showBusStatus();
-      showUnmatchedPosts();
       showFmsRiskPanel();
 
       // 全体表示
@@ -1884,6 +3027,19 @@
 
       document.getElementById('update-time').textContent =
         '最終読込: ' + new Date().toLocaleString('ja-JP');
+
+      // データ読み込み完了
+      dataReady = true;
+      if (currentView === 'dashboard') renderDashboard();
+      if (currentView === 'navi') renderNaviView();
+
+      // ディープリンク: ?area=工区名 でマップ遷移＋エリア選択
+      const urlParams = new URLSearchParams(window.location.search);
+      const areaParam = urlParams.get('area');
+      if (areaParam) {
+        switchView('map');
+        setTimeout(function() { selectAreaByName(areaParam); }, 300);
+      }
     });
 
     // モーダル制御
@@ -2126,7 +3282,8 @@
           submitBtn.textContent = 'SOSを送信';
           document.getElementById('sos-note').value = '';
 
-          // 送信後に地図をSOSの位置に移動
+          // 送信後にマップビューに切り替え、SOSの位置に移動
+          switchView('map');
           map.setView([sosLat, sosLng], 15);
 
           // 少し遅延してからポップアップを更新（リアルタイム同期を待つ）

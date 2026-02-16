@@ -1,0 +1,122 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [140.770248, 40.804649] },
+      "properties": {
+        "name": "桜川・筒井融流雪溝中継ポンプ場",
+        "address": "青森県青森市筒井3丁目13",
+        "category": "流雪溝専用",
+        "function": "中継",
+        "system": "桜川・筒井系",
+        "note": "中継ポンプ場",
+        "source": "Yahooマップ"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [140.794601, 40.827732] },
+      "properties": {
+        "name": "東造道第二融雪ポンプ場",
+        "address": "青森県青森市東造道3丁目4-1",
+        "category": "流雪溝専用",
+        "function": "送水",
+        "system": "東造道系",
+        "note": "旧称：融雪送水第二ポンプ場",
+        "source": "Yahooマップ"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [140.791946, 40.830387] },
+      "properties": {
+        "name": "東造道第一融雪ポンプ場",
+        "address": "青森県青森市東造道1丁目1-4",
+        "category": "流雪溝専用",
+        "function": "送水",
+        "system": "東造道系",
+        "note": "旧称：融雪送水ポンプ場",
+        "source": "Yahooマップ"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [140.803711, 40.840076] },
+      "properties": {
+        "name": "久栗坂造道線融流雪溝ポンプ場",
+        "address": "青森県青森市原別1丁目10",
+        "category": "流雪溝専用",
+        "function": "送水または中継",
+        "system": "久栗坂造道線系",
+        "note": "路線名明示",
+        "source": "Yahooマップ"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [140.783783, 40.813133] },
+      "properties": {
+        "name": "佃温泉排湯取水位置",
+        "address": "青森県青森市南佃2丁目3-20",
+        "category": "排湯施設",
+        "function": "排湯取水",
+        "system": "佃温泉系",
+        "note": "ゆーぽっぽ排湯",
+        "source": "事業計画書／現地情報"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [140.777145, 40.809155] },
+      "properties": {
+        "name": "佃第一既設排水樋門",
+        "address": "青森県青森市松森3丁目11-1",
+        "category": "排水施設",
+        "function": "排水",
+        "system": "佃排水系",
+        "note": "既設樋門",
+        "source": "事業計画書"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [140.776459, 40.811497] },
+      "properties": {
+        "name": "佃第二既設排水樋門",
+        "address": "青森県青森市松森3丁目7",
+        "category": "排水施設",
+        "function": "排水",
+        "system": "佃排水系",
+        "note": "既設樋門",
+        "source": "事業計画書"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [140.774277, 40.814388] },
+      "properties": {
+        "name": "佃第三既設排水樋門",
+        "address": "青森県青森市松森2丁目8-23",
+        "category": "排水施設",
+        "function": "排水",
+        "system": "佃排水系",
+        "note": "既設樋門",
+        "source": "事業計画書"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [140.773438, 40.817326] },
+      "properties": {
+        "name": "佃取水位置",
+        "address": "青森県青森市松森2丁目5",
+        "category": "取水施設",
+        "function": "取水",
+        "system": "佃系",
+        "note": "佃第四排水と同一地点（近接）",
+        "source": "事業計画書"
+      }
+    }
+  ]
+}
