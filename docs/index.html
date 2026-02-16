@@ -246,8 +246,10 @@
       #map { height: 50vh; min-height: 300px; width: 100%; order: -1; }
       #panel { width: 100%; height: auto; min-height: 50vh; border-left: none; border-top: 1px solid #ddd; overflow-y: visible; }
       .summary-grid { grid-template-columns: 1fr 1fr 1fr; }
-      #header .header-nav-wrap { flex: 1; text-align: center; }
+      #header { position: relative; justify-content: center; }
+      #header .header-nav-wrap { width: 100%; text-align: center; order: -1; }
       #header-title { font-size: 14px; }
+      #back-btn { position: absolute; left: 10px; top: 10px; }
     }
 
     /* 凡例 */
