@@ -889,6 +889,36 @@
     .hub-footer a:hover { color: #fff; }
 
     /* 戻るボタン */
+    /* ヘッダーナビメニュー */
+    .header-nav-wrap { position: relative; display: inline-block; }
+    .header-nav-wrap h1 { cursor: pointer; }
+    .header-nav-wrap h1::after { content: ' ▾'; font-size: 12px; opacity: 0.6; }
+    .nav-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      padding: 6px 0;
+      z-index: 9999;
+      min-width: 200px;
+    }
+    .nav-menu.open { display: block; }
+    .nav-menu a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      color: #333;
+      text-decoration: none;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .nav-menu a:hover { background: #f0f0f0; }
+    .nav-menu a.nav-active { background: #e8f0fe; font-weight: bold; color: #1a3a5c; }
+
     #back-btn {
       background: none;
       border: none;
@@ -1095,7 +1125,16 @@
 <body>
   <div id="header">
     <button id="back-btn" onclick="switchView('hub')">&#8592;</button>
-    <h1 id="header-title">青森市 除排雪スケジュールマップ</h1>
+    <span class="header-nav-wrap">
+      <h1 id="header-title" onclick="toggleNavMenu(event)">青森市 除排雪スケジュールマップ</h1>
+      <div class="nav-menu" id="nav-menu">
+        <a href="#" onclick="navTo('hub',event)">&#10052; トップ</a>
+        <a href="#" onclick="navTo('map',event)">&#x1F5FA; 除排雪マップ</a>
+        <a href="#" onclick="navTo('sos',event)">&#x1F198; SOS通報</a>
+        <a href="#" onclick="navTo('navi',event)">&#x1F6E3; 安全ルート</a>
+        <a href="#" onclick="navTo('dashboard',event)">&#x1F4CA; ダッシュボード</a>
+      </div>
+    </span>
     <div>
       <small id="update-time"></small>
       <button id="reload-btn" onclick="location.reload()">更新</button>
@@ -2091,13 +2130,34 @@
     };
 
     // Xで共有
+    // ヘッダーナビメニュー
+    window.toggleNavMenu = function(e) {
+      e.stopPropagation();
+      var menu = document.getElementById('nav-menu');
+      // 現在のビューをハイライト
+      menu.querySelectorAll('a').forEach(function(a) { a.classList.remove('nav-active'); });
+      var viewMap = {'hub':0,'map':1,'sos':2,'navi':3,'dashboard':4};
+      var idx = viewMap[currentView];
+      if (idx !== undefined) menu.querySelectorAll('a')[idx].classList.add('nav-active');
+      menu.classList.toggle('open');
+      document.getElementById('share-menu').classList.remove('open');
+    };
+    window.navTo = function(view, e) {
+      e.preventDefault();
+      document.getElementById('nav-menu').classList.remove('open');
+      switchView(view);
+    };
     // サイト共有メニュー
     window.toggleShareMenu = function(e) {
       e.stopPropagation();
+      document.getElementById('nav-menu').classList.remove('open');
       var menu = document.getElementById('share-menu');
       menu.classList.toggle('open');
     };
+
+    // メニューを閉じる（ナビ・共有共通）
     document.addEventListener('click', function() {
+      document.getElementById('nav-menu').classList.remove('open');
       document.getElementById('share-menu').classList.remove('open');
     });
 
