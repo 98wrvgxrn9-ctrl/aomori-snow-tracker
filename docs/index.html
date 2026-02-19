@@ -3077,15 +3077,20 @@
       if (layerVisibility.kokudo) kokudoLayer.addTo(map);
 
       // バス運休路線レイヤー準備（初期非表示）
-      // bus_status.json の resumed のうち、type が無い（本当に通常運行に戻った）路線のみ除外
-      const resumedRoutes = (busStatusData && busStatusData.resumed)
-        ? busStatusData.resumed.filter(r => !r.type).map(r => r.route)
-        : [];
+      // new_info（本日新規）+ continuing（継続中）に載っている路線のみ表示するホワイトリスト方式
+      // continuing が空なら全路線通常運行 → 何も表示しない
+      const activelySuspendedRoutes = [
+        ...(busStatusData && busStatusData.new_info ? busStatusData.new_info.map(r => r.route) : []),
+        ...(busStatusData && busStatusData.continuing ? busStatusData.continuing.map(r => r.route) : []),
+      ];
       busLayer.clearLayers();
       busLayers = [];
-      if (busSuspendedData && busSuspendedData.features) {
+      if (busSuspendedData && busSuspendedData.features && activelySuspendedRoutes.length > 0) {
         busSuspendedData.features.filter(feature => {
-          return !resumedRoutes.some(route => feature.properties.name.includes(route));
+          const featureBaseName = feature.properties.name.split('（')[0];
+          return activelySuspendedRoutes.some(route =>
+            feature.properties.name.includes(route) || route.includes(featureBaseName)
+          );
         }).forEach(feature => {
           const props = feature.properties;
           // 運休区間ライン（赤太線 + 白破線で❌感）
