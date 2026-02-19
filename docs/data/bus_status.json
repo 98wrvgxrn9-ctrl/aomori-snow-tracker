@@ -1,18 +1,9 @@
 {
   "source": "青森市営バス運行状況お知らせ",
-  "updated_at": "2026-02-18 05:30",
+  "updated_at": null,
   "next_update_notice": null,
   "new_info": [],
-  "resumed": [
-    {
-      "route": "小柳団地線",
-      "detail": "桜川経由（桜川七丁目～桜川三丁目）（通常運行）"
-    },
-    {
-      "route": "沢山線（戸山団地南～沢山）",
-      "detail": "（通常運行）"
-    }
-  ],
+  "resumed": [],
   "continuing": [],
   "notes": [
     "市内全域において、降雪による交通障害のため大幅な運行遅れが発生することがあります。"
