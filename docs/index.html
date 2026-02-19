@@ -263,6 +263,27 @@
       max-height: calc(100vh - 120px);
       overflow-y: auto;
     }
+    /* スパネ度パネル */
+    .spane-panel {
+      background: rgba(255,255,255,0.93);
+      padding: 7px 10px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      font-size: 11px;
+      line-height: 1.5;
+      min-width: 110px;
+      text-align: center;
+    }
+    .spane-panel .spane-value {
+      font-size: 22px;
+      font-weight: bold;
+      line-height: 1.1;
+    }
+    .spane-panel .spane-sub {
+      font-size: 10px;
+      color: #666;
+      margin-top: 2px;
+    }
     .legend-item { display: flex; align-items: center; gap: 4px; }
     .legend-color {
       width: 10px; height: 6px;
@@ -1467,6 +1488,7 @@
     let busSuspendedData = null; // バス運休路線GeoJSON
     let busLayers = [];          // バス運休路線のLeafletレイヤー群
     let busLayersVisible = false; // バス路線表示状態
+    let spaneData = null;         // スパネ度指数
     let routeLayer = null;       // ルート描画用LayerGroup
     let naviOriginArea = null;   // 出発エリア名
     let naviDestArea = null;     // 目的地エリア名
@@ -1480,8 +1502,9 @@
     const busLayer = L.layerGroup();
     const supportLayer = L.layerGroup();
     const kokuLayer = L.layerGroup();
-    const layerVisibility = { koku: true, dump: true, ryusetsuko: true, kokudo: true, bus: false, support: true };
-    const layerGroupMap = { koku: kokuLayer, dump: dumpSiteLayer, ryusetsuko: ryusetsukoLayer, kokudo: kokudoLayer, bus: busLayer, support: supportLayer };
+    const spaneLayer = L.layerGroup();
+    const layerVisibility = { koku: true, dump: true, ryusetsuko: true, kokudo: true, bus: false, support: true, spane: false };
+    const layerGroupMap = { koku: kokuLayer, dump: dumpSiteLayer, ryusetsuko: ryusetsukoLayer, kokudo: kokudoLayer, bus: busLayer, support: supportLayer, spane: spaneLayer };
     const FEATURE_VIDEO_URL = ''; // 例: 'https://www.youtube.com/embed/xxxxxxxxxxx'
 
     // ビュー管理
@@ -1967,6 +1990,13 @@
         html += `<div class="detail-row"><span class="label">除雪業者（この工区）</span><span class="value" style="color:${operatorMoodArea.color};font-weight:bold">${operatorMoodArea.emoji} ${operatorMoodArea.label}</span></div>`;
       }
 
+      // スパネ度（泥跳ね指数）
+      const spaneZone = spaneData && spaneData.zones && spaneData.zones[props['名前']];
+      if (spaneZone) {
+        const spaneCol = spaneZone.spane_index >= 70 ? '#795548' : spaneZone.spane_index >= 40 ? '#e67e22' : spaneZone.spane_index >= 15 ? '#f39c12' : '#3498db';
+        html += `<div class="detail-row"><span class="label">スパネ度</span><span class="value" style="color:${spaneCol};font-weight:bold">${spaneZone.spane_index} / 100（${spaneZone.level}）</span></div>`;
+      }
+
       // 空間情報（メタデータ）
       const meta = areasMeta[props['名前']];
       if (meta) {
@@ -1986,10 +2016,17 @@
       const nameForShare = (props['名前'] || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
       html += `<button class="share-btn" data-area="${nameForShare}" onclick="shareArea(this.dataset.area)">𝕏 Xで共有</button>`;
 
-      // 路面状況予測カード
+      // 路面状況予測カード（折りたたみ）
       const pred = roadPredictions[props['名前']];
       if (pred && window.RoadSVG) {
+        const safeId = 'road-card-' + (props['名前'] || '').replace(/[^\w]/g, '_');
+        html += `<div style="margin-top:10px">`;
+        html += `<div onclick="var b=document.getElementById('${safeId}');var i=this.querySelector('.ti');if(b.style.display==='none'){b.style.display='';i.textContent='▼'}else{b.style.display='none';i.textContent='▶'}" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#eef3f8;border-radius:6px;font-size:12px;font-weight:bold;color:#555;margin-bottom:4px">`;
+        html += `<span>🚗 ドライバー視点（概念図）</span><span class="ti">▶</span>`;
+        html += `</div>`;
+        html += `<div id="${safeId}" style="display:none">`;
         html += window.RoadSVG.renderRoadConditionCard(pred);
+        html += `</div></div>`;
       }
 
       document.getElementById('selected-info').innerHTML = html;
@@ -2477,9 +2514,28 @@
         html += '<div class="legend-item"><span class="legend-color" style="background:#2e7d32"></span>作業予定</div>';
         html += '<div class="legend-item"><span class="legend-color" style="background:#78909c"></span>作業終了</div>';
       }
+      // スパネ度
+      if (layerVisibility.spane) {
+        html += '<div class="legend-section">スパネ度（泥跳ね）</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#3498db"></span>低 (0〜14)</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#f39c12"></span>中 (15〜39)</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#e67e22"></span>高 (40〜69)</div>';
+        html += '<div class="legend-item"><span class="legend-color" style="background:#795548"></span>危 (70〜)</div>';
+      }
       legendDiv.innerHTML = html || '<span style="color:#aaa">凡例なし</span>';
     }
     legend.addTo(map);
+
+    // スパネ度コントロール（右下）
+    var spaneDiv = null;
+    const spaneControl = L.control({ position: 'bottomright' });
+    spaneControl.onAdd = function() {
+      spaneDiv = L.DomUtil.create('div', 'spane-panel');
+      L.DomEvent.disableClickPropagation(spaneDiv);
+      spaneDiv.style.display = 'none';
+      return spaneDiv;
+    };
+    spaneControl.addTo(map);
 
     // レイヤーコントロール（パネル内に配置）
     function renderPanelLayerControl() {
@@ -2498,6 +2554,7 @@
         { key: 'kokudo', label: '国道除雪状況', icon: '<span style="display:inline-block;width:14px;height:4px;background:#f1c40f;border-radius:2px"></span>' },
         { key: 'bus', label: 'バス運休区間', icon: '<span style="display:inline-block;width:14px;height:4px;background:#dc2626;border-radius:2px"></span>' },
         { key: 'support', label: '応援除雪(県)', icon: '<span style="display:inline-block;width:14px;height:14px;background:#2e7d32;opacity:0.5;border:1px solid #2e7d32;border-radius:2px"></span>' },
+        { key: 'spane', label: 'スパネ度（泥跳ね）', icon: '<span style="display:inline-block;width:14px;height:14px;background:#f39c12;opacity:0.8;border:1px solid #e67e22;border-radius:2px"></span>' },
       ];
 
       layers.forEach(function({ key, label, icon }) {
@@ -2533,6 +2590,10 @@
       // チェックボックス・凡例を同期
       updateToggleCheckbox(key);
       updateLegend();
+      // スパネ度の場合はレイヤーを描画（ON時のみ）
+      if (key === 'spane' && layerVisibility.spane) {
+        renderSpaneLayer();
+      }
       // バスの場合はパネルボタンも同期
       if (key === 'bus') {
         busLayersVisible = layerVisibility.bus;
@@ -2630,6 +2691,59 @@
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { supportZones = data.features || []; })
         .catch(err => { console.warn('応援除雪工区読み込み失敗:', err); supportZones = []; });
+    }
+
+    // スパネ度読み込み
+    function loadSpaneIndex() {
+      return freshFetch('data/spane_index.json')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => { spaneData = data; })
+        .catch(() => { spaneData = null; });
+    }
+
+    // スパネ度の色を返す
+    function spaneColor(idx) {
+      if (idx >= 70) return '#795548';
+      if (idx >= 40) return '#e67e22';
+      if (idx >= 15) return '#f39c12';
+      return '#3498db';
+    }
+
+    // スパネ度コロプレスレイヤーを描画
+    function renderSpaneLayer() {
+      spaneLayer.clearLayers();
+      if (!spaneData || !spaneData.zones || !allFeatures) return;
+      const zones = spaneData.zones;
+      allFeatures.forEach(function(feat) {
+        const name = feat.properties && feat.properties['名前'];
+        if (!name || !(name in zones)) return;
+        const zone = zones[name];
+        const color = spaneColor(zone.spane_index);
+        L.geoJSON(feat, {
+          style: { color: color, fillColor: color, fillOpacity: 0.7, weight: 1, opacity: 0.8 },
+        })
+        .bindTooltip(name + ' スパネ度: ' + zone.spane_index + '（' + zone.level + '）<br>除雪から' + zone.days_since_clearance + '日', { sticky: true })
+        .addTo(spaneLayer);
+      });
+    }
+
+    // スパネ度フローティングパネル描画（市全体サマリー）
+    function renderSpanePanel() {
+      if (!spaneDiv) return;
+      if (!spaneData || !spaneData.base) {
+        spaneDiv.style.display = 'none';
+        return;
+      }
+      const base = spaneData.base;
+      const top = spaneData.top_zone;
+      const color = spaneColor(base.city_spane);
+      spaneDiv.style.display = '';
+      spaneDiv.innerHTML =
+        '<div style="font-size:10px;font-weight:bold;color:#555;margin-bottom:2px">スパネ度</div>' +
+        '<div class="spane-value" style="color:' + color + '">' + base.city_spane + '</div>' +
+        '<div class="spane-sub">' + base.temp_avg_c + '℃ × 積雪' + base.snow_depth_cm + 'cm</div>' +
+        (top ? '<div class="spane-sub" style="margin-top:3px">最高 ' + top.spane_index + '（' + top.name + '）</div>' : '') +
+        '<div class="spane-sub" style="font-size:9px;color:#aaa">' + (spaneData.date || '') + '</div>';
     }
 
     // FMSリスクパネル表示
@@ -2838,7 +2952,12 @@
       loadBusStatus(),
       loadBusSuspended(),
       loadSupportZones(),
+      loadSpaneIndex(),
     ]).then(([kokuFeatures, rosenFeatures]) => {
+      // スパネ度パネル描画・レイヤー初期化
+      renderSpanePanel();
+      renderSpaneLayer();
+
       // 路面状況予測を計算
       if (window.RoadPredict && fmsRisk) {
         roadPredictions = window.RoadPredict.predictAllAreas(fmsRisk, areasMeta);

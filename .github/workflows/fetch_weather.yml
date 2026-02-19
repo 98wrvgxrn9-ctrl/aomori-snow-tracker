@@ -1,0 +1,43 @@
+name: Fetch Aomori Weather
+
+on:
+  schedule:
+    # 毎日 10:00 JST = 01:00 UTC
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch_weather:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt -r scripts/fms/requirements.txt
+
+      - name: Update Aomori weather datasets
+        run: python scripts/fms/update_aomori_weather.py
+
+      - name: Generate spane index
+        run: python scripts/gen_spane_index.py
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git diff --quiet || echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push if changed
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Update Aomori weather data - $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          git push
