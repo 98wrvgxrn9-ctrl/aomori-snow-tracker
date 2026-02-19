@@ -1456,6 +1456,21 @@
   <script src="js/road-condition-predict.js"></script>
   <script src="js/road-condition-svg.js"></script>
   <script>
+    // 応援除雪の作業予定期間を [start, end] (Date) で返す
+    function parsePeriodDates(str) {
+      if (!str || !str.trim()) return [null, null];
+      const parts = str.split(/[～〜~]/);
+      function pd(s) {
+        if (!s) return null;
+        const m = s.match(/(\d+)月\s*(\d+)日/);
+        if (!m) return null;
+        const d = new Date(new Date().getFullYear(), parseInt(m[1]) - 1, parseInt(m[2]));
+        d.setHours(0, 0, 0, 0);
+        return d;
+      }
+      return [pd(parts[0] || ''), pd(parts[1] || '')];
+    }
+
     // ステータス判定（部分一致）
     function classifyStatus(raw) {
       if (!raw) return 'other';
@@ -2343,11 +2358,50 @@
         return html;
       }
 
+      // 応援除雪集計（期間日付で判定）
+      const _now = new Date(); _now.setHours(0, 0, 0, 0);
+      const supportSeen = new Set();
+      let supportActive = [], supportUpcoming = [];
+      supportZones.forEach(f => {
+        const p = f.properties;
+        const name = p['工区名'] || p['名前'] || '';
+        const period = p['作業予定期間（開始予定日～終了予定日）'] || '';
+        if (!period.trim() || supportSeen.has(name)) return;
+        supportSeen.add(name);
+        const [s, e] = parsePeriodDates(period);
+        if (!s || !e) return;
+        const meta = areasMeta[name] || {};
+        const quarter = (meta.address_detail && meta.address_detail.quarter) || '';
+        const label = quarter || name;
+        if (s <= _now && _now <= e) supportActive.push({ name, label, end: e });
+        else if (s > _now) supportUpcoming.push({ name, label, start: s, end: e });
+      });
+
+      let supportHtml = '';
+      if (supportActive.length > 0 || supportUpcoming.length > 0) {
+        supportHtml += `<div class="summary-section-title">県応援除雪</div>`;
+        if (supportActive.length > 0) {
+          supportHtml += `<div style="font-size:11px;font-weight:bold;color:#2e7d32;margin:4px 0 2px">現在作業中 ${supportActive.length}工区</div>`;
+          supportActive.forEach(({label, end}) => {
+            const mm = end.getMonth()+1, dd = end.getDate();
+            supportHtml += `<div style="font-size:11px;color:#444;padding:1px 4px">▸ ${label}（〜${mm}/${dd}）</div>`;
+          });
+        }
+        if (supportUpcoming.length > 0) {
+          supportHtml += `<div style="font-size:11px;font-weight:bold;color:#f57f17;margin:6px 0 2px">今後予定 ${supportUpcoming.length}工区</div>`;
+          supportUpcoming.forEach(({label, start, end}) => {
+            const sm = start.getMonth()+1, sd = start.getDate();
+            const em = end.getMonth()+1, ed = end.getDate();
+            supportHtml += `<div style="font-size:11px;color:#444;padding:1px 4px">▸ ${label}（${sm}/${sd}〜${em}/${ed}）</div>`;
+          });
+        }
+      }
+
       document.getElementById('summary').innerHTML =
-        summaryRow('koku', '工区', koku, kTotal) + summaryRow('rosen', '路線', rosen, rTotal);
+        summaryRow('koku', '工区', koku, kTotal) + summaryRow('rosen', '路線', rosen, rTotal) + supportHtml;
 
       // シェア用に件数を保存
-      window._summaryStats = { koku, rosen, kTotal, rTotal };
+      window._summaryStats = { koku, rosen, kTotal, rTotal, supportActive, supportUpcoming };
       document.getElementById('share-bar').style.display = '';
     }
 
@@ -2461,6 +2515,12 @@
       if (s.koku.adjusting > 0) text += ` / 日程調整中 ${s.koku.adjusting}件`;
       text += `\n路線（${s.rTotal}）: 作業予定あり ${s.rosen.scheduled}路線`;
       if (s.rosen.adjusting > 0) text += ` / 日程調整中 ${s.rosen.adjusting}路線`;
+      if (s.supportActive && s.supportActive.length > 0) {
+        text += `\n県応援除雪: ${s.supportActive.length}工区 作業中`;
+        if (s.supportActive.length <= 3) {
+          text += `（${s.supportActive.map(z => z.label).join('・')}）`;
+        }
+      }
       text += `\n#青森市道路雪情報 #除雪`;
       const url = 'https://aomori-snow-tracker.web.app';
       window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
@@ -3186,24 +3246,31 @@
       }
       // バスは初期非表示（layerVisibility.bus = false）
 
-      // 応援除雪工区レイヤー表示（作業予定・作業終了のみ）
+      // 応援除雪工区レイヤー表示（作業予定期間を日付で判定）
       supportLayer.clearLayers();
+      const _today = new Date(); _today.setHours(0, 0, 0, 0);
       supportZones.forEach(feature => {
         const props = feature.properties;
-        const status = props.status || '';
-        if (status === '未定' || !status) return; // 対象外は非表示
+        const period = props['作業予定期間（開始予定日～終了予定日）'] || '';
+        if (!period.trim()) return;
+        const [startD, endD] = parsePeriodDates(period);
+        if (!startD || !endD) return;
         let fillColor, fillOpacity, weight, borderColor;
-        if (status === '作業予定') {
-          fillColor = '#2e7d32'; fillOpacity = 0.35; weight = 2; borderColor = '#2e7d32';
-        } else if (status === '作業終了') {
-          fillColor = '#78909c'; fillOpacity = 0.2; weight = 1.5; borderColor = '#78909c';
+        if (startD <= _today && _today <= endD) {
+          fillColor = '#2e7d32'; fillOpacity = 0.45; weight = 2; borderColor = '#2e7d32';
+        } else if (endD < _today) {
+          fillColor = '#78909c'; fillOpacity = 0.15; weight = 1; borderColor = '#78909c';
         } else {
-          return;
+          // 将来予定（薄いオレンジ）
+          fillColor = '#f57f17'; fillOpacity = 0.25; weight = 1.5; borderColor = '#f57f17';
         }
+        const zoneName = props['工区名'] || props['名前'] || '';
+        const meta = areasMeta[zoneName] || {};
+        const quarter = (meta.address_detail && meta.address_detail.quarter) || '';
+        const label = quarter ? `${quarter}(${zoneName})` : zoneName;
         const lyr = L.geoJSON(feature, {
           style: { color: borderColor, weight: weight, fillColor: fillColor, fillOpacity: fillOpacity },
-          interactive: false,
-        });
+        }).bindTooltip(`応援除雪 ${label}<br>${period.trim()}`, { sticky: true });
         supportLayer.addLayer(lyr);
       });
       if (layerVisibility.support) supportLayer.addTo(map);
