@@ -1432,6 +1432,9 @@
         </div>
         <div id="panel-layer-control"></div>
         <div id="summary"></div>
+        <div id="share-bar" style="display:none;text-align:right;margin:-4px 0 8px">
+          <button onclick="shareToX()" style="background:#000;color:#fff;border:none;padding:4px 12px;border-radius:14px;font-size:11px;cursor:pointer">𝕏 でシェア</button>
+        </div>
         <div id="fms-risk-panel"></div>
         <div id="selected-info"></div>
         <div id="x-posts-container"></div>
@@ -2342,6 +2345,10 @@
 
       document.getElementById('summary').innerHTML =
         summaryRow('koku', '工区', koku, kTotal) + summaryRow('rosen', '路線', rosen, rTotal);
+
+      // シェア用に件数を保存
+      window._summaryStats = { koku, rosen, kTotal, rTotal };
+      document.getElementById('share-bar').style.display = '';
     }
 
     // カードクリックでフィルター＋一覧表示
@@ -2441,6 +2448,22 @@
         body.style.display = 'none';
         toggle.textContent = '▼ 開く';
       }
+    };
+
+    // X でシェア
+    window.shareToX = function() {
+      const s = window._summaryStats;
+      if (!s) return;
+      const d = new Date();
+      const mm = d.getMonth() + 1, dd = d.getDate();
+      let text = `【青森市 除雪出動指令状況】${mm}/${dd} 更新\n`;
+      text += `工区（${s.kTotal}）: 作業予定あり ${s.koku.scheduled}件`;
+      if (s.koku.adjusting > 0) text += ` / 日程調整中 ${s.koku.adjusting}件`;
+      text += `\n路線（${s.rTotal}）: 作業予定あり ${s.rosen.scheduled}路線`;
+      if (s.rosen.adjusting > 0) text += ` / 日程調整中 ${s.rosen.adjusting}路線`;
+      text += `\n#青森市道路雪情報 #除雪`;
+      const url = 'https://aomori-snow-tracker.web.app';
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
     };
 
     // 全体表示に戻す
