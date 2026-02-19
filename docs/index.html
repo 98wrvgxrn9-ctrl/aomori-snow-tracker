@@ -2383,10 +2383,17 @@
       document.getElementById('area-list-body').style.display = 'block';
       document.getElementById('area-list-toggle').textContent = '▲ 閉じる';
 
-      // 一覧構築
+      // 一覧構築（路線は同名セグメントを重複排除して1路線1行）
       filtered.sort((a, b) => (a.properties['名前'] || '').localeCompare(b.properties['名前'] || '', 'ja'));
+      const seenNames = new Set();
+      const deduped = type === 'rosen'
+        ? filtered.filter(f => { const n = f.properties['名前']; if (seenNames.has(n)) return false; seenNames.add(n); return true; })
+        : filtered;
       const listEl = document.getElementById('area-list');
-      listEl.innerHTML = filtered.map(f => {
+      if (type === 'rosen') {
+        document.getElementById('area-list-title').textContent = `路線 - ${statusName}（${deduped.length}路線）`;
+      }
+      listEl.innerHTML = deduped.map(f => {
         const p = f.properties;
         const cls = classifyStatus(p['ステータス']);
         const cfg = STATUS_CONFIG[cls];
