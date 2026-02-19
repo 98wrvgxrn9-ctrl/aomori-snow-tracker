@@ -2604,8 +2604,9 @@
       updateToggleCheckbox(key);
       updateLegend();
       // スパネ度の場合はレイヤーを描画（ON時のみ）
-      if (key === 'spane' && layerVisibility.spane) {
+      if (key === 'spane') {
         renderSpaneLayer();
+        renderSpanePanel();
       }
       // バスの場合はパネルボタンも同期
       if (key === 'bus') {
@@ -2743,7 +2744,7 @@
     // スパネ度フローティングパネル描画（市全体サマリー）
     function renderSpanePanel() {
       if (!spaneDiv) return;
-      if (!spaneData || !spaneData.base) {
+      if (!spaneData || !spaneData.base || !layerVisibility.spane) {
         spaneDiv.style.display = 'none';
         return;
       }
