@@ -2585,49 +2585,59 @@
     function updateLegend() {
       if (!legendDiv) return;
       var html = '';
-      // 雪捨て場（dump）
-      if (layerVisibility.dump) {
-        html += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:10px;height:10px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
+
+      // ── 除雪グループ ──
+      const hasJosetsu = layerVisibility.koku || layerVisibility.support || layerVisibility.kokudo;
+      if (hasJosetsu) {
+        html += '<div class="legend-section">除雪</div>';
+        // 市（工区・路線）
+        if (layerVisibility.koku) {
+          html += '<div style="font-size:9px;color:#888;margin:2px 0 1px;padding-left:2px">市（工区・路線）</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#e74c3c"></span>作業予定あり</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#3498db"></span>現場確認中</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#e67e22"></span>日程調整中</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#95a5a6"></span>その他</div>';
+        }
+        // 県（応援除雪）
+        if (layerVisibility.support) {
+          html += '<div style="font-size:9px;color:#888;margin:4px 0 1px;padding-left:2px">県（応援除雪）</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#2e7d32"></span>作業中</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#f57f17"></span>今後予定</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#78909c"></span>作業終了</div>';
+        }
+        // 国（国道）
+        if (layerVisibility.kokudo) {
+          html += '<div style="font-size:9px;color:#888;margin:4px 0 1px;padding-left:2px">国（国道）</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済</div>';
+        }
       }
-      // バス運休（bus）
-      if (layerVisibility.bus) {
-        html += '<div class="legend-item"><span class="legend-color" style="background:#dc2626"></span> バス運休</div>';
+
+      // ── その他グループ ──
+      const hasOther = layerVisibility.dump || layerVisibility.ryusetsuko || layerVisibility.bus || layerVisibility.spane;
+      if (hasOther) {
+        html += '<div class="legend-section">その他</div>';
+        if (layerVisibility.dump) {
+          html += '<div class="legend-item"><span style="background:#2ecc71;color:#fff;width:10px;height:10px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">&#10052;</span> 雪捨て場</div>';
+        }
+        if (layerVisibility.ryusetsuko) {
+          html += '<div class="legend-item" style="margin-top:2px"><span style="font-size:9px;color:#888">流雪溝</span></div>';
+          html += '<div class="legend-item"><span style="background:#3498db;width:10px;height:10px;border-radius:50%;flex-shrink:0"></span> ポンプ場</div>';
+          html += '<div class="legend-item"><span style="background:#e67e22;width:10px;height:10px;border-radius:50%;flex-shrink:0"></span> 排水</div>';
+          html += '<div class="legend-item"><span style="background:#9b59b6;width:10px;height:10px;border-radius:50%;flex-shrink:0"></span> 取水</div>';
+        }
+        if (layerVisibility.bus) {
+          html += '<div class="legend-item"><span class="legend-color" style="background:#dc2626"></span>バス運休</div>';
+        }
+        if (layerVisibility.spane) {
+          html += '<div class="legend-item" style="margin-top:2px"><span style="font-size:9px;color:#888">スパネ度（泥跳ね）</span></div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#3498db"></span>低 (0〜14)</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#f39c12"></span>中 (15〜39)</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#e67e22"></span>高 (40〜69)</div>';
+          html += '<div class="legend-item"><span class="legend-color" style="background:#795548"></span>危 (70〜)</div>';
+        }
       }
-      // 流雪溝（ryusetsuko）
-      if (layerVisibility.ryusetsuko) {
-        html += '<div class="legend-section">流雪溝</div>';
-        html += '<div class="legend-item"><span style="background:#3498db;color:#fff;width:10px;height:10px;border-radius:50%;font-size:6px;flex-shrink:0"></span> ポンプ場</div>';
-        html += '<div class="legend-item"><span style="background:#e67e22;width:10px;height:10px;border-radius:50%;flex-shrink:0"></span> 排水</div>';
-        html += '<div class="legend-item"><span style="background:#9b59b6;width:10px;height:10px;border-radius:50%;flex-shrink:0"></span> 取水</div>';
-      }
-      // 国道（kokudo）
-      if (layerVisibility.kokudo) {
-        html += '<div class="legend-section">国道</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#f1c40f"></span>作業中</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#16a085"></span>除雪済</div>';
-      }
-      // 工区除雪状況
-      if (layerVisibility.koku) {
-        html += '<div class="legend-section">工区除雪状況</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#e74c3c"></span>作業予定あり</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#3498db"></span>現場確認中</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#e67e22"></span>日程調整中</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#95a5a6"></span>その他</div>';
-      }
-      // 応援除雪（support）
-      if (layerVisibility.support) {
-        html += '<div class="legend-section">応援除雪(県)</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#2e7d32"></span>作業予定</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#78909c"></span>作業終了</div>';
-      }
-      // スパネ度
-      if (layerVisibility.spane) {
-        html += '<div class="legend-section">スパネ度（泥跳ね）</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#3498db"></span>低 (0〜14)</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#f39c12"></span>中 (15〜39)</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#e67e22"></span>高 (40〜69)</div>';
-        html += '<div class="legend-item"><span class="legend-color" style="background:#795548"></span>危 (70〜)</div>';
-      }
+
       legendDiv.innerHTML = html || '<span style="color:#aaa">凡例なし</span>';
     }
     legend.addTo(map);
@@ -2653,22 +2663,35 @@
       html += '🗂 レイヤー <span style="font-size:10px">▼</span></div>';
       html += '<div class="layer-control-body" id="panel-lc-body">';
 
-      const layers = [
-        { key: 'koku', label: '工区除雪状況', icon: '<span style="display:inline-block;width:14px;height:14px;background:#e74c3c;opacity:0.5;border:1px solid #e74c3c;border-radius:2px"></span>' },
-        { key: 'dump', label: '雪捨て場', icon: '<span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px">&#10052;</span>' },
-        { key: 'ryusetsuko', label: '流雪溝施設', icon: '<span style="background:#3498db;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px">💧</span>' },
-        { key: 'kokudo', label: '国道除雪状況', icon: '<span style="display:inline-block;width:14px;height:4px;background:#f1c40f;border-radius:2px"></span>' },
-        { key: 'bus', label: 'バス運休区間', icon: '<span style="display:inline-block;width:14px;height:4px;background:#dc2626;border-radius:2px"></span>' },
-        { key: 'support', label: '応援除雪(県)', icon: '<span style="display:inline-block;width:14px;height:14px;background:#2e7d32;opacity:0.5;border:1px solid #2e7d32;border-radius:2px"></span>' },
-        { key: 'spane', label: 'スパネ度（泥跳ね）', icon: '<span style="display:inline-block;width:14px;height:14px;background:#f39c12;opacity:0.8;border:1px solid #e67e22;border-radius:2px"></span>' },
+      const layerGroups = [
+        {
+          label: '除雪',
+          items: [
+            { key: 'koku',    label: '工区・路線除雪（市）', icon: '<span style="display:inline-block;width:14px;height:14px;background:#e74c3c;opacity:0.5;border:1px solid #e74c3c;border-radius:2px"></span>' },
+            { key: 'support', label: '応援除雪（県）',       icon: '<span style="display:inline-block;width:14px;height:14px;background:#2e7d32;opacity:0.5;border:1px solid #2e7d32;border-radius:2px"></span>' },
+            { key: 'kokudo',  label: '国道除雪（国）',       icon: '<span style="display:inline-block;width:14px;height:4px;background:#f1c40f;border-radius:2px"></span>' },
+          ]
+        },
+        {
+          label: 'その他',
+          items: [
+            { key: 'dump',       label: '雪捨て場',         icon: '<span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px">&#10052;</span>' },
+            { key: 'ryusetsuko', label: '流雪溝施設',       icon: '<span style="background:#3498db;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px">💧</span>' },
+            { key: 'bus',        label: 'バス運休区間',     icon: '<span style="display:inline-block;width:14px;height:4px;background:#dc2626;border-radius:2px"></span>' },
+            { key: 'spane',      label: 'スパネ度（泥跳ね）', icon: '<span style="display:inline-block;width:14px;height:14px;background:#f39c12;opacity:0.8;border:1px solid #e67e22;border-radius:2px"></span>' },
+          ]
+        },
       ];
 
-      layers.forEach(function({ key, label, icon }) {
-        const checked = layerVisibility[key] ? 'checked' : '';
-        html += '<div class="layer-control-item">';
-        html += '<input type="checkbox" id="layer-cb-' + key + '" ' + checked + ' onchange="toggleLayer(\'' + key + '\')">';
-        html += '<label for="layer-cb-' + key + '">' + icon + ' ' + label + '</label>';
-        html += '</div>';
+      layerGroups.forEach(function({ label: groupLabel, items }) {
+        html += `<div style="font-size:10px;font-weight:bold;color:#888;margin:6px 0 2px;padding-left:2px;border-bottom:1px solid #eee">${groupLabel}</div>`;
+        items.forEach(function({ key, label, icon }) {
+          const checked = layerVisibility[key] ? 'checked' : '';
+          html += '<div class="layer-control-item">';
+          html += '<input type="checkbox" id="layer-cb-' + key + '" ' + checked + ' onchange="toggleLayer(\'' + key + '\')">';
+          html += '<label for="layer-cb-' + key + '">' + icon + ' ' + label + '</label>';
+          html += '</div>';
+        });
       });
 
       html += '</div></div>';
