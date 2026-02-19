@@ -161,9 +161,9 @@ def parse_kml(kml_content, name_field="name"):
         if ext:
             # 新マップ形式: ExtendedDataから構造化データを取得
             if name_field == "description":
-                # 路線: nameが路線名、ExtendedDataに作業状況等
-                item_name = name_elem.text if name_elem is not None else ""
-                status = ext.get("作業状況", "不明")
+                # 路線: ExtendedDataの「路線名」が路線名、nameがステータス
+                item_name = ext.get("路線名", "")
+                status = name_elem.text if name_elem is not None else "不明"
             else:
                 # 工区: ExtendedDataに工区名等、nameはステータステキスト
                 item_name = ext.get("工区名", "")
@@ -176,6 +176,8 @@ def parse_kml(kml_content, name_field="name"):
                 }
                 if ext.get("直近作業予定日"):
                     row["直近作業予定日"] = ext["直近作業予定日"]
+                if ext.get("作業予定期間"):
+                    row["作業予定期間"] = ext["作業予定期間"]
                 if ext.get("指令"):
                     row["指令"] = ext["指令"]
                 if ext.get("更新日時"):
