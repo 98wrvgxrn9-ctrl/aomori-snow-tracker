@@ -2290,10 +2290,13 @@
         return c;
       }
 
+      // 路線は同名セグメントを重複排除してから集計
+      const rosenUniq = [...new Map(rosenFeatures.map(f => [f.properties['名前'], f])).values()];
+
       const koku = countByStatus(kokuFeatures);
-      const rosen = countByStatus(rosenFeatures);
+      const rosen = countByStatus(rosenUniq);
       const kTotal = kokuFeatures.length;
-      const rTotal = rosenFeatures.length;
+      const rTotal = rosenUniq.length;
 
       function diffBadge(current, prev) {
         if (prev == null) return '';
