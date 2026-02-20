@@ -1064,25 +1064,19 @@
       color: #6b7280;
       margin: -2px 0 6px;
     }
-    .navi-autocomplete {
-      background: #fff;
-      border: 1px solid #ddd;
+    .navi-selection {
+      border: 1px solid #d1d5db;
       border-radius: 8px;
-      max-height: 180px;
-      overflow-y: auto;
-      margin-top: -8px;
-      margin-bottom: 10px;
-      display: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .navi-autocomplete-item {
+      background: #f8fafc;
       padding: 10px 12px;
       font-size: 13px;
-      cursor: pointer;
-      border-bottom: 1px solid #f0f0f0;
+      color: #334155;
+      margin-bottom: 8px;
+      min-height: 20px;
     }
-    .navi-autocomplete-item:last-child { border-bottom: none; }
-    .navi-autocomplete-item:hover { background: #f0f5ff; }
+    .navi-selection.empty {
+      color: #9ca3af;
+    }
     .navi-gps-status {
       font-size: 11px;
       color: #888;
@@ -1582,7 +1576,6 @@
     let naviGpsCoords = null;    // GPS座標
     let naviPickMode = null;     // 地図選択モード: 'origin' | 'dest' | null
     let naviSkipReset = false;   // map選択後の復帰時に入力保持
-    let naviDestDocClickBound = false;
     let pendingRouteResult = null; // 検索結果保持
 
     // レイヤーグループ
@@ -1703,15 +1696,12 @@
       var formHtml = '<div class="navi-form">';
       formHtml += '<label>出発地</label>';
       formHtml += '<div id="navi-gps-status" class="navi-gps-status">GPS取得中...</div>';
-      formHtml += '<input type="text" id="navi-origin" class="navi-input" placeholder="現在地を取得中..." readonly>';
-      formHtml += '<div class="navi-inline-actions"><button type="button" class="navi-map-pick-btn" onclick="startNaviMapPick(\'origin\')">地図で選択</button></div>';
+      formHtml += '<div id="navi-origin-display" class="navi-selection empty">未選択</div>';
+      formHtml += '<div class="navi-inline-actions"><button type="button" class="navi-map-pick-btn" onclick="startNaviMapPick(\'origin\')">地図で出発地を選択</button></div>';
       formHtml += '<label>目的地</label>';
-      formHtml += '<div style="position:relative">';
-      formHtml += '<input type="text" id="navi-dest" class="navi-input" placeholder="工区名・住所・場所名を入力">';
-      formHtml += '<div id="navi-dest-ac" class="navi-autocomplete"></div>';
-      formHtml += '</div>';
-      formHtml += '<div class="navi-inline-actions"><button type="button" class="navi-map-pick-btn" onclick="startNaviMapPick(\'dest\')">地図で選択</button></div>';
-      formHtml += '<div class="navi-hint">住所や地名でも候補を検索できます。</div>';
+      formHtml += '<div id="navi-dest-display" class="navi-selection empty">未選択</div>';
+      formHtml += '<div class="navi-inline-actions"><button type="button" class="navi-map-pick-btn" onclick="startNaviMapPick(\'dest\')">地図で目的地を選択</button><button type="button" class="navi-map-pick-btn" onclick="clearNaviDest()">目的地クリア</button></div>';
+      formHtml += '<div class="navi-hint">工区番号入力は不要です。地図タップで選択してください。</div>';
       formHtml += '<button class="navi-search-btn" id="navi-search-btn" onclick="searchRoute()" disabled>ルート検索</button>';
       formHtml += '</div>';
       document.getElementById('navi-form-container').innerHTML = formHtml;
@@ -1719,36 +1709,40 @@
         document.getElementById('navi-result-container').innerHTML = '';
       }
 
-      setupOriginAutocomplete();
-      setupNaviAutocomplete();
       if (!preserveState) {
         requestNaviGps();
       } else {
-        var statusEl = document.getElementById('navi-gps-status');
-        var originEl = document.getElementById('navi-origin');
-        var destEl = document.getElementById('navi-dest');
-        if (naviOriginArea) {
-          originEl.value = naviOriginArea;
-          statusEl.textContent = '地図選択済み: ' + naviOriginArea;
-          statusEl.className = 'navi-gps-status ok';
-          originEl.setAttribute('readonly', 'readonly');
-        } else {
-          requestNaviGps();
-        }
-        if (naviDestArea) destEl.value = naviDestArea;
+        if (!naviOriginArea) requestNaviGps();
       }
+      refreshNaviSelectionUI();
       updateSearchBtnState();
     }
 
+    function refreshNaviSelectionUI() {
+      var originEl = document.getElementById('navi-origin-display');
+      var destEl = document.getElementById('navi-dest-display');
+      if (originEl) {
+        originEl.textContent = naviOriginArea || '未選択';
+        originEl.classList.toggle('empty', !naviOriginArea);
+      }
+      if (destEl) {
+        destEl.textContent = naviDestArea || '未選択';
+        destEl.classList.toggle('empty', !naviDestArea);
+      }
+    }
+
+    window.clearNaviDest = function() {
+      naviDestArea = null;
+      refreshNaviSelectionUI();
+      updateSearchBtnState();
+    };
+
     function requestNaviGps() {
       var statusEl = document.getElementById('navi-gps-status');
-      var originEl = document.getElementById('navi-origin');
       if (!navigator.geolocation) {
-        statusEl.textContent = 'GPS非対応 - 出発地を手入力してください';
+        statusEl.textContent = 'GPS非対応 - 地図から出発地を選択してください';
         statusEl.className = 'navi-gps-status error';
-        originEl.removeAttribute('readonly');
-        originEl.placeholder = '出発エリア名を入力';
-        setupOriginAutocomplete();
+        refreshNaviSelectionUI();
         return;
       }
       navigator.geolocation.getCurrentPosition(function(pos) {
@@ -1756,23 +1750,19 @@
         var nearest = findNearestArea(naviGpsCoords.lat, naviGpsCoords.lng);
         if (nearest) {
           naviOriginArea = nearest;
-          originEl.value = nearest;
           statusEl.textContent = 'GPS取得OK - 最寄りエリア: ' + nearest;
           statusEl.className = 'navi-gps-status ok';
+          refreshNaviSelectionUI();
           updateSearchBtnState();
         } else {
-          statusEl.textContent = 'エリア特定失敗 - 出発地を手入力してください';
+          statusEl.textContent = 'エリア特定失敗 - 地図から出発地を選択してください';
           statusEl.className = 'navi-gps-status error';
-          originEl.removeAttribute('readonly');
-          originEl.placeholder = '出発エリア名を入力';
-          setupOriginAutocomplete();
+          refreshNaviSelectionUI();
         }
       }, function() {
-        statusEl.textContent = 'GPS取得失敗 - 出発地を手入力してください';
+        statusEl.textContent = 'GPS取得失敗 - 地図から出発地を選択してください';
         statusEl.className = 'navi-gps-status error';
-        originEl.removeAttribute('readonly');
-        originEl.placeholder = '出発エリア名を入力';
-        setupOriginAutocomplete();
+        refreshNaviSelectionUI();
       }, { timeout: 10000, maximumAge: 60000 });
     }
 
@@ -1796,128 +1786,6 @@
               Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
               Math.sin(dLng/2) * Math.sin(dLng/2);
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    }
-
-    function setupOriginAutocomplete() {
-      var originEl = document.getElementById('navi-origin');
-      if (!originEl) return;
-      var names = Object.keys(areasMeta);
-      var acContainer = document.getElementById('navi-origin-ac');
-      if (!acContainer) {
-        acContainer = document.createElement('div');
-        acContainer.className = 'navi-autocomplete';
-        acContainer.id = 'navi-origin-ac';
-        originEl.parentNode.insertBefore(acContainer, originEl.nextSibling);
-      }
-      if (originEl.dataset.acBound === '1') return;
-      originEl.dataset.acBound = '1';
-
-      originEl.addEventListener('input', function() {
-        var val = originEl.value.trim();
-        naviOriginArea = names.includes(val) ? val : null;
-        updateSearchBtnState();
-        acContainer.innerHTML = '';
-        if (!val) { acContainer.style.display = 'none'; return; }
-        var matches = names.filter(function(n) { return n.indexOf(val) !== -1; }).slice(0, 8);
-        if (matches.length === 0) { acContainer.style.display = 'none'; return; }
-        matches.forEach(function(m) {
-          var item = document.createElement('div');
-          item.className = 'navi-autocomplete-item';
-          item.textContent = m;
-          item.onclick = function() {
-            originEl.value = m;
-            naviOriginArea = m;
-            acContainer.style.display = 'none';
-            updateSearchBtnState();
-          };
-          acContainer.appendChild(item);
-        });
-        acContainer.style.display = 'block';
-      });
-    }
-
-    function getNaviSearchEntries() {
-      return Object.keys(areasMeta).map(function(name) {
-        var meta = areasMeta[name] || {};
-        var detail = meta.address_detail || {};
-        var tags = [
-          name,
-          meta.address || '',
-          detail.quarter || '',
-          detail.neighbourhood || '',
-          detail.road || '',
-        ].join(' ');
-        return { name: name, address: meta.address || '', tags: tags };
-      });
-    }
-
-    function findNaviMatches(query) {
-      var q = (query || '').trim();
-      if (!q) return [];
-      return getNaviSearchEntries()
-        .map(function(e) {
-          var score = 0;
-          if (e.name === q) score += 100;
-          if (e.name.indexOf(q) !== -1) score += 50;
-          if (e.tags.indexOf(q) !== -1) score += 20;
-          return { entry: e, score: score };
-        })
-        .filter(function(x) { return x.score > 0; })
-        .sort(function(a, b) { return b.score - a.score; })
-        .slice(0, 8)
-        .map(function(x) { return x.entry; });
-    }
-
-    function setupNaviAutocomplete() {
-      var destEl = document.getElementById('navi-dest');
-      var acEl = document.getElementById('navi-dest-ac');
-      if (!destEl || !acEl) return;
-      if (destEl.dataset.acBound === '1') return;
-      destEl.dataset.acBound = '1';
-
-      destEl.addEventListener('input', function() {
-        var val = destEl.value.trim();
-        naviDestArea = areasMeta[val] ? val : null;
-        updateSearchBtnState();
-        acEl.innerHTML = '';
-        if (!val) { acEl.style.display = 'none'; return; }
-        var matches = findNaviMatches(val);
-        if (matches.length === 0) { acEl.style.display = 'none'; return; }
-        matches.forEach(function(m) {
-          var item = document.createElement('div');
-          item.className = 'navi-autocomplete-item';
-          item.innerHTML = '<div style="font-weight:600;color:#1f2937">' + m.name + '</div>'
-            + (m.address ? '<div style="font-size:10px;color:#6b7280">' + m.address + '</div>' : '');
-          item.onclick = function() {
-            destEl.value = m.name;
-            naviDestArea = m.name;
-            acEl.style.display = 'none';
-            updateSearchBtnState();
-          };
-          acEl.appendChild(item);
-        });
-        acEl.style.display = 'block';
-      });
-      destEl.addEventListener('keydown', function(e) {
-        if (e.key !== 'Enter') return;
-        var matches = findNaviMatches(destEl.value);
-        if (matches.length === 0) return;
-        e.preventDefault();
-        destEl.value = matches[0].name;
-        naviDestArea = matches[0].name;
-        acEl.style.display = 'none';
-        updateSearchBtnState();
-      });
-
-      if (!naviDestDocClickBound) {
-        document.addEventListener('click', function(e) {
-          if (!e.target.closest('#navi-dest') && !e.target.closest('#navi-dest-ac')) {
-            var current = document.getElementById('navi-dest-ac');
-            if (current) current.style.display = 'none';
-          }
-        });
-        naviDestDocClickBound = true;
-      }
     }
 
     function showNaviPickBanner(text) {
