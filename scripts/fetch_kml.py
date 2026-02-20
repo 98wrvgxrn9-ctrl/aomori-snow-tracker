@@ -49,6 +49,7 @@ STATUS_COLORS = {
 # 日本時間
 JST = timezone(timedelta(hours=9))
 SUPPORT_ZONE_KEYWORDS = ("応援除雪工区", "県財政支援")
+STATUS_HINTS = ("作業", "確認", "調整", "除雪", "対応")
 
 
 def fetch_kml(url):
@@ -162,9 +163,15 @@ def parse_kml(kml_content, name_field="name"):
         if ext:
             # 新マップ形式: ExtendedDataから構造化データを取得
             if name_field == "description":
-                # 路線: ExtendedDataの「路線名」が路線名、nameがステータス
-                item_name = ext.get("路線名", "")
-                status = name_elem.text if name_elem is not None else "不明"
+                # 路線: KML仕様差分に備えて路線名/ステータスを自動判定
+                raw_name = name_elem.text.strip() if name_elem is not None and name_elem.text else ""
+                ext_route = (ext.get("路線名") or "").strip()
+                ext_status = (ext.get("作業状況") or ext.get("ステータス") or "").strip()
+
+                # raw_name がステータス文かどうかを判定
+                raw_is_status = any(hint in raw_name for hint in STATUS_HINTS)
+                item_name = ext_route if ext_route else ("" if raw_is_status else raw_name)
+                status = raw_name if raw_is_status else (ext_status if ext_status else "不明")
             else:
                 # 工区: ExtendedDataに工区名等、nameはステータステキスト
                 item_name = ext.get("工区名", "")
