@@ -196,6 +196,12 @@ def build_winter_summary(daily: pd.DataFrame) -> pd.DataFrame:
 
 def build_fms_daily_compare(root: Path, daily: pd.DataFrame) -> pd.DataFrame:
     fms_path = root / "data" / "raw" / "fms" / "by_prefecture" / "2_青森県.csv"
+    if not fms_path.exists():
+        # CIなどで元CSVが無い場合は投稿0件として継続する
+        merged = daily[["date", "snowfall_cm", "max_snow_depth_cm"]].copy()
+        merged["posts"] = 0
+        return merged.sort_values("date")
+
     fms = pd.read_csv(fms_path)
 
     fms_dt = pd.to_datetime(fms["pub_date"], errors="coerce", utc=True)
