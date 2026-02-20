@@ -418,7 +418,10 @@ def save_support_zones_geojson(koku_data, filepath):
         if not geometry:
             continue
 
-        period = row.get("作業予定期間", "")
+        period = (row.get("作業予定期間") or "").strip()
+        # 期間未設定の応援除雪は表示対象外（終了済み残骸の表示防止）
+        if not period or period == "-":
+            continue
         properties = {
             "label": "工区のマップを確認ください｡",
             "status": "未定",
@@ -428,7 +431,7 @@ def save_support_zones_geojson(koku_data, filepath):
             "指令": row.get("指令", "－"),
             "お知らせ": row.get("お知らせ", ""),
             "更新日時": row.get("更新日時", ""),
-            "作業予定期間（開始予定日～終了予定日）": "" if period == "-" else period,
+            "作業予定期間（開始予定日～終了予定日）": period,
             # 互換性向上のため、原データの主要フィールドも保持
             "名前": row.get("名前", ""),
             "ステータス": row.get("ステータス", ""),
