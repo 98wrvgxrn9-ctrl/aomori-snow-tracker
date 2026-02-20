@@ -876,6 +876,28 @@
       gap: 4px;
       flex: 1;
     }
+    .layer-control-subitem {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 2px 2px 20px;
+    }
+    .layer-control-subitem input[type="checkbox"] {
+      margin: 0;
+      cursor: pointer;
+    }
+    .layer-control-subitem label {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      font-size: 11px;
+      color: #4b5563;
+    }
+    .layer-control-subitem.disabled {
+      opacity: 0.45;
+    }
     /* ハブビュー */
     #hub-view {
       min-height: calc(100vh - 44px);
@@ -1535,6 +1557,7 @@
     const kokuLayer = L.layerGroup();
     const spaneLayer = L.layerGroup();
     const layerVisibility = { koku: true, dump: true, ryusetsuko: true, kokudo: true, bus: false, support: true, spane: false };
+    const kokuStatusVisibility = { scheduled: true, checking: true, adjusting: true };
     const layerGroupMap = { koku: kokuLayer, dump: dumpSiteLayer, ryusetsuko: ryusetsukoLayer, kokudo: kokudoLayer, bus: busLayer, support: supportLayer, spane: spaneLayer };
     const FEATURE_VIDEO_URL = ''; // 例: 'https://www.youtube.com/embed/xxxxxxxxxxx'
 
@@ -2593,9 +2616,9 @@
         // 市（工区・路線）
         if (layerVisibility.koku) {
           html += '<div style="font-size:9px;color:#888;margin:2px 0 1px;padding-left:2px">市（工区・路線）</div>';
-          html += '<div class="legend-item"><span class="legend-color" style="background:#e74c3c"></span>作業予定あり</div>';
-          html += '<div class="legend-item"><span class="legend-color" style="background:#3498db"></span>現場確認中</div>';
-          html += '<div class="legend-item"><span class="legend-color" style="background:#e67e22"></span>日程調整中</div>';
+          if (kokuStatusVisibility.scheduled) html += '<div class="legend-item"><span class="legend-color" style="background:#e74c3c"></span>作業予定あり</div>';
+          if (kokuStatusVisibility.checking) html += '<div class="legend-item"><span class="legend-color" style="background:#3498db"></span>現場確認中</div>';
+          if (kokuStatusVisibility.adjusting) html += '<div class="legend-item"><span class="legend-color" style="background:#e67e22"></span>日程調整中</div>';
           html += '<div class="legend-item"><span class="legend-color" style="background:#95a5a6"></span>その他</div>';
         }
         // 県（応援除雪）
@@ -2691,6 +2714,22 @@
           html += '<input type="checkbox" id="layer-cb-' + key + '" ' + checked + ' onchange="toggleLayer(\'' + key + '\')">';
           html += '<label for="layer-cb-' + key + '">' + icon + ' ' + label + '</label>';
           html += '</div>';
+          if (key === 'koku') {
+            const statuses = [
+              { key: 'scheduled', label: '作業予定あり', color: '#e74c3c' },
+              { key: 'checking', label: '現場確認中', color: '#3498db' },
+              { key: 'adjusting', label: '日程調整中', color: '#e67e22' },
+            ];
+            statuses.forEach(function(st) {
+              const subChecked = kokuStatusVisibility[st.key] ? 'checked' : '';
+              const disabled = layerVisibility.koku ? '' : 'disabled';
+              const disabledClass = layerVisibility.koku ? '' : ' disabled';
+              html += '<div class="layer-control-subitem' + disabledClass + '" id="layer-sub-wrap-' + st.key + '">';
+              html += '<input type="checkbox" id="layer-cb-koku-' + st.key + '" ' + subChecked + ' ' + disabled + ' onchange="toggleKokuStatus(\'' + st.key + '\')">';
+              html += '<label for="layer-cb-koku-' + st.key + '"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + st.color + '"></span>' + st.label + '</label>';
+              html += '</div>';
+            });
+          }
         });
       });
 
@@ -2706,6 +2745,56 @@
       });
     }
     renderPanelLayerControl();
+
+    function shouldShowKokuByStatus(statusClass) {
+      if (statusClass === 'scheduled' || statusClass === 'checking' || statusClass === 'adjusting') {
+        return kokuStatusVisibility[statusClass];
+      }
+      return true;
+    }
+
+    function applyKokuStatusFilter() {
+      allLayers.forEach(function(item) {
+        if (!item || item.source !== 'koku') return;
+        const visible = shouldShowKokuByStatus(item.statusClass);
+        if (visible) {
+          if (!kokuLayer.hasLayer(item.layer)) kokuLayer.addLayer(item.layer);
+          if (item.labelLayer && !kokuLayer.hasLayer(item.labelLayer)) kokuLayer.addLayer(item.labelLayer);
+        } else {
+          if (kokuLayer.hasLayer(item.layer)) kokuLayer.removeLayer(item.layer);
+          if (item.labelLayer && kokuLayer.hasLayer(item.labelLayer)) kokuLayer.removeLayer(item.labelLayer);
+        }
+      });
+
+      if (selectedLayer && selectedLayer.feature && selectedLayer.feature._source === 'koku') {
+        const selectedItem = allLayers.find(function(item) { return item.layer === selectedLayer; });
+        if (selectedItem && !shouldShowKokuByStatus(selectedItem.statusClass)) {
+          selectedLayer = null;
+          map.closePopup();
+        }
+      }
+    }
+
+    function updateKokuSubControls() {
+      ['scheduled', 'checking', 'adjusting'].forEach(function(key) {
+        const cb = document.getElementById('layer-cb-koku-' + key);
+        const wrap = document.getElementById('layer-sub-wrap-' + key);
+        if (cb) {
+          cb.checked = kokuStatusVisibility[key];
+          cb.disabled = !layerVisibility.koku;
+        }
+        if (wrap) {
+          wrap.classList.toggle('disabled', !layerVisibility.koku);
+        }
+      });
+    }
+
+    window.toggleKokuStatus = function(key) {
+      kokuStatusVisibility[key] = !kokuStatusVisibility[key];
+      applyKokuStatusFilter();
+      updateKokuSubControls();
+      updateLegend();
+    };
 
     // レイヤートグル関数
     window.toggleLayer = function(key) {
@@ -2738,11 +2827,16 @@
           }
         }
       }
+      if (key === 'koku') {
+        applyKokuStatusFilter();
+        updateKokuSubControls();
+      }
     };
 
     function updateToggleCheckbox(key) {
       const cb = document.getElementById('layer-cb-' + key);
       if (cb) cb.checked = layerVisibility[key];
+      if (key === 'koku') updateKokuSubControls();
     }
 
     // データ読み込み（キャッシュ回避）
@@ -3093,6 +3187,8 @@
         roadPredictions = window.RoadPredict.predictAllAreas(fmsRisk, areasMeta);
       }
 
+      kokuFeatures.forEach(function(feature) { feature._source = 'koku'; });
+      rosenFeatures.forEach(function(feature) { feature._source = 'rosen'; });
       const combined = [...kokuFeatures, ...rosenFeatures];
       allFeatures = combined;
 
@@ -3113,9 +3209,11 @@
 
         // geoJSONレイヤーの最初の子レイヤーを取得
         const innerLayer = layer.getLayers()[0];
+        const statusClass = classifyStatus(feature.properties['ステータス']);
+        let labelLayer = null;
         if (innerLayer) {
           innerLayer.feature = feature;
-          allLayers.push({ layer: innerLayer, feature: feature });
+          allLayers.push({ layer: innerLayer, feature: feature, source: feature._source, statusClass: statusClass, labelLayer: null });
         }
 
         // ポリゴンの中心にラベルを表示
@@ -3130,7 +3228,7 @@
             } else if (risk && risk.total > 0) {
               labelHtml += `<span style="display:inline-block;background:#8b5cf6;color:#fff;font-size:8px;font-weight:bold;border-radius:6px;padding:0 3px;margin-left:2px;vertical-align:top;text-shadow:none;line-height:1.4">${risk.total}</span>`;
             }
-            const label = L.marker([meta.centroid[1], meta.centroid[0]], {
+            labelLayer = L.marker([meta.centroid[1], meta.centroid[0]], {
               icon: L.divIcon({
                 className: 'area-label',
                 html: labelHtml,
@@ -3140,7 +3238,15 @@
             }).addTo(kokuLayer);
           }
         }
+        if (innerLayer) {
+          const last = allLayers[allLayers.length - 1];
+          if (last && last.layer === innerLayer) {
+            last.labelLayer = labelLayer;
+          }
+        }
       });
+      applyKokuStatusFilter();
+      updateKokuSubControls();
       if (layerVisibility.koku) kokuLayer.addTo(map);
 
       // 雪捨て場マーカー表示
