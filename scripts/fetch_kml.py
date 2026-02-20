@@ -48,6 +48,7 @@ STATUS_COLORS = {
 
 # 日本時間
 JST = timezone(timedelta(hours=9))
+SUPPORT_ZONE_KEYWORDS = ("応援除雪工区", "県財政支援")
 
 
 def fetch_kml(url):
@@ -390,6 +391,62 @@ def save_to_geojson(data, filepath, last_work_dates=None, directive_starts=None)
     return filepath
 
 
+def is_support_zone_row(row):
+    """工区データから県応援除雪対象を判定"""
+    status = row.get("ステータス", "")
+    notice = row.get("お知らせ", "")
+    text = f"{status} {notice}"
+    return any(keyword in text for keyword in SUPPORT_ZONE_KEYWORDS)
+
+
+def save_support_zones_geojson(koku_data, filepath):
+    """工区データから県応援除雪レイヤー用GeoJSONを生成"""
+    updated = datetime.now(JST).isoformat()
+    features = []
+
+    for row in koku_data:
+        if not is_support_zone_row(row):
+            continue
+        geometry = row.get("_geometry")
+        if not geometry:
+            continue
+
+        period = row.get("作業予定期間", "")
+        properties = {
+            "label": "工区のマップを確認ください｡",
+            "status": "未定",
+            "color": "#757575",
+            "工区名": row.get("名前", ""),
+            "直近作業予定日": row.get("直近作業予定日", "-"),
+            "指令": row.get("指令", "－"),
+            "お知らせ": row.get("お知らせ", ""),
+            "更新日時": row.get("更新日時", ""),
+            "作業予定期間（開始予定日～終了予定日）": "" if period == "-" else period,
+            # 互換性向上のため、原データの主要フィールドも保持
+            "名前": row.get("名前", ""),
+            "ステータス": row.get("ステータス", ""),
+            "作業予定期間": period,
+        }
+        features.append({
+            "type": "Feature",
+            "properties": properties,
+            "geometry": geometry,
+        })
+
+    geojson = {
+        "type": "FeatureCollection",
+        "name": "応援除雪工区（県財政支援）",
+        "updated": updated,
+        "features": features,
+    }
+
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(geojson, f, ensure_ascii=False, indent=2)
+
+    return filepath
+
+
 def save_to_sheets(data):
     """Googleスプレッドシートに追記"""
     creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
@@ -456,6 +513,11 @@ def main():
         geojson_path = os.path.join(docs_data_dir, f'{map_id}.geojson')
         save_to_geojson(data, geojson_path, last_work_dates=last_work_dates, directive_starts=directive_starts)
         print(f"GeoJSON保存: {geojson_path}")
+
+        if map_id == "koku":
+            support_geojson_path = os.path.join(docs_data_dir, 'support_zones.geojson')
+            save_support_zones_geojson(data, support_geojson_path)
+            print(f"GeoJSON保存: {support_geojson_path}")
 
         # ステータス集計
         status_count = {}
