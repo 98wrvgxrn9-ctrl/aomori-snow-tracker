@@ -1032,6 +1032,31 @@
       display: block;
       margin-bottom: 4px;
     }
+    .navi-mode-row {
+      display: flex;
+      gap: 8px;
+      margin: 6px 0 10px;
+      flex-wrap: wrap;
+    }
+    .navi-mode-btn {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #334155;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .navi-mode-btn.active {
+      background: #1a3a5c;
+      border-color: #1a3a5c;
+      color: #fff;
+    }
+    .navi-mode-note {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
     .navi-input {
       width: 100%;
       padding: 10px 12px;
@@ -1109,6 +1134,36 @@
       font-size: 14px;
       color: #1a3a5c;
       margin-bottom: 10px;
+    }
+    .navi-mode-insight {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #334155;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .navi-route-options {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .navi-route-option-btn {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #334155;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .navi-route-option-btn.active {
+      background: #1a3a5c;
+      border-color: #1a3a5c;
+      color: #fff;
     }
     .navi-route-step {
       display: flex;
@@ -1335,7 +1390,6 @@
         <li>除排雪スケジュール: <a href="https://www.city.aomori.aomori.jp/seikatsu/kurashi/seikatsu/yuki/index.html" target="_blank" rel="noopener">青森市 — 雪についてのお知らせ</a>（市が公開するオープンデータを引用）</li>
         <li>雪捨て場情報: <a href="https://www.city.aomori.aomori.jp/" target="_blank" rel="noopener">青森市公式サイト</a>（公開情報を引用）</li>
         <li>市民レポート（FMS）: <a href="https://www.fixmystreet.jp/" target="_blank" rel="noopener">FixMyStreet Japan</a>（公開投稿を統計化して引用。原文は各投稿ページをご参照ください）</li>
-        <li>市民体感（SNS）: X（旧Twitter）上の公開投稿を統計化（原文非公開・個人特定情報なし）</li>
         <li>地図タイル: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</li>
       </ul>
 
@@ -1574,8 +1628,11 @@
     let naviOriginArea = null;   // 出発エリア名
     let naviDestArea = null;     // 目的地エリア名
     let naviGpsCoords = null;    // GPS座標
+    let naviTransportMode = null; // 'car' | 'walk_bike' | 'bus'
     let naviPickMode = null;     // 地図選択モード: 'origin' | 'dest' | null
     let naviSkipReset = false;   // map選択後の復帰時に入力保持
+    let naviRouteCandidates = []; // 候補ルート一覧
+    let naviSelectedRouteIndex = 0;
     let pendingRouteResult = null; // 検索結果保持
 
     // レイヤーグループ
@@ -1690,10 +1747,20 @@
         naviOriginArea = null;
         naviDestArea = null;
         naviGpsCoords = null;
+        naviTransportMode = null;
+        naviRouteCandidates = [];
+        naviSelectedRouteIndex = 0;
         pendingRouteResult = null;
       }
 
       var formHtml = '<div class="navi-form">';
+      formHtml += '<label>何を使って移動しますか？</label>';
+      formHtml += '<div class="navi-mode-row">';
+      formHtml += '<button type="button" id="navi-mode-car" class="navi-mode-btn" onclick="setNaviTransportMode(\'car\')">車</button>';
+      formHtml += '<button type="button" id="navi-mode-walk-bike" class="navi-mode-btn" onclick="setNaviTransportMode(\'walk_bike\')">徒歩・自転車</button>';
+      formHtml += '<button type="button" id="navi-mode-bus" class="navi-mode-btn" onclick="setNaviTransportMode(\'bus\')">バス</button>';
+      formHtml += '</div>';
+      formHtml += '<div id="navi-mode-note" class="navi-mode-note">まず交通手段を選択してください。</div>';
       formHtml += '<label>出発地</label>';
       formHtml += '<div id="navi-gps-status" class="navi-gps-status">GPS取得中...</div>';
       formHtml += '<div id="navi-origin-display" class="navi-selection empty">未選択</div>';
@@ -1714,6 +1781,7 @@
       } else {
         if (!naviOriginArea) requestNaviGps();
       }
+      refreshNaviModeUI();
       refreshNaviSelectionUI();
       updateSearchBtnState();
     }
@@ -1730,6 +1798,36 @@
         destEl.classList.toggle('empty', !naviDestArea);
       }
     }
+
+    function refreshNaviModeUI() {
+      var modeMap = {
+        car: 'navi-mode-car',
+        walk_bike: 'navi-mode-walk-bike',
+        bus: 'navi-mode-bus',
+      };
+      Object.keys(modeMap).forEach(function(key) {
+        var btn = document.getElementById(modeMap[key]);
+        if (btn) btn.classList.toggle('active', naviTransportMode === key);
+      });
+
+      var note = document.getElementById('navi-mode-note');
+      if (!note) return;
+      if (naviTransportMode === 'car') {
+        note.textContent = '車向け: スタック情報と除雪リスクを重視します。';
+      } else if (naviTransportMode === 'walk_bike') {
+        note.textContent = '徒歩・自転車向け: 注意喚起を優先して表示します。';
+      } else if (naviTransportMode === 'bus') {
+        note.textContent = 'バス向け: 運休・迂回情報と代替案を表示します。';
+      } else {
+        note.textContent = 'まず交通手段を選択してください。';
+      }
+    }
+
+    window.setNaviTransportMode = function(mode) {
+      naviTransportMode = mode;
+      refreshNaviModeUI();
+      updateSearchBtnState();
+    };
 
     window.clearNaviDest = function() {
       naviDestArea = null;
@@ -1811,7 +1909,7 @@
 
     function updateSearchBtnState() {
       var btn = document.getElementById('navi-search-btn');
-      if (btn) btn.disabled = !(naviOriginArea && naviDestArea);
+      if (btn) btn.disabled = !(naviTransportMode && naviOriginArea && naviDestArea);
     }
 
     function computeRiskWeight(areaName) {
@@ -1826,7 +1924,47 @@
       return Math.max(1, w);
     }
 
-    function dijkstra(start, end) {
+    function getCentroidDistanceKm(fromArea, toArea) {
+      var fromMeta = areasMeta[fromArea];
+      var toMeta = areasMeta[toArea];
+      if (!fromMeta || !fromMeta.centroid || !toMeta || !toMeta.centroid) return 1;
+      return haversine(fromMeta.centroid[1], fromMeta.centroid[0], toMeta.centroid[1], toMeta.centroid[0]);
+    }
+
+    function getModeWeights(profile) {
+      var p = profile || 'safe';
+      if (naviTransportMode === 'walk_bike') {
+        if (p === 'short') return { risk: 0.6, dist: 1.0 };
+        if (p === 'balance') return { risk: 0.8, dist: 1.2 };
+        return { risk: 1.0, dist: 1.4 };
+      }
+      if (naviTransportMode === 'bus') {
+        if (p === 'short') return { risk: 0.5, dist: 0.9 };
+        if (p === 'balance') return { risk: 0.7, dist: 1.0 };
+        return { risk: 0.9, dist: 1.1 };
+      }
+      if (p === 'short') return { risk: 0.6, dist: 1.2 };
+      if (p === 'balance') return { risk: 1.0, dist: 1.0 };
+      return { risk: 1.4, dist: 0.8 };
+    }
+
+    function computeEdgeCost(currentArea, neighborArea, profile, nodePenalty) {
+      var baseRisk = computeRiskWeight(neighborArea);
+      var distKm = getCentroidDistanceKm(currentArea, neighborArea);
+      var w = getModeWeights(profile);
+      var cost = baseRisk * w.risk + Math.max(0.4, distKm * 1.4) * w.dist;
+      if (naviTransportMode === 'bus') {
+        var suspendedNear = findNearestSuspendedStops(neighborArea, 1);
+        if (suspendedNear.length > 0 && suspendedNear[0].distanceKm < 1.0) cost += 2.0;
+      }
+      if (nodePenalty && nodePenalty[neighborArea]) cost += nodePenalty[neighborArea];
+      return cost;
+    }
+
+    function dijkstra(start, end, options) {
+      options = options || {};
+      var profile = options.profile || 'safe';
+      var nodePenalty = options.nodePenalty || {};
       if (!areasMeta[start] || !areasMeta[end]) return null;
       var dist = {};
       var prev = {};
@@ -1848,7 +1986,7 @@
 
         meta.neighbors.forEach(function(neighbor) {
           if (visited[neighbor] || !areasMeta[neighbor]) return;
-          var w = computeRiskWeight(neighbor);
+          var w = computeEdgeCost(current.node, neighbor, profile, nodePenalty);
           var newDist = dist[current.node] + w;
           if (dist[neighbor] === undefined || newDist < dist[neighbor]) {
             dist[neighbor] = newDist;
@@ -1869,24 +2007,127 @@
       return { path: path, totalCost: dist[end] };
     }
 
-    window.searchRoute = function searchRoute() {
-      if (!naviOriginArea || !naviDestArea) return;
+    function routeSignature(path) {
+      return (path || []).join('>');
+    }
+
+    function generateRouteCandidates(start, end) {
+      var candidates = [];
+      var profiles = [
+        { key: 'safe', label: '安全優先' },
+        { key: 'balance', label: 'バランス' },
+        { key: 'short', label: '短め' },
+      ];
+      profiles.forEach(function(p) {
+        var r = dijkstra(start, end, { profile: p.key });
+        if (r) {
+          r.profile = p.key;
+          r.profileLabel = p.label;
+          candidates.push(r);
+        }
+      });
+
+      var base = candidates.find(function(c) { return c.profile === 'balance'; }) || candidates[0];
+      if (base && base.path && base.path.length > 3) {
+        var penalty = {};
+        base.path.slice(1, -1).forEach(function(a) { penalty[a] = 2.8; });
+        var detour = dijkstra(start, end, { profile: 'balance', nodePenalty: penalty });
+        if (detour) {
+          detour.profile = 'detour';
+          detour.profileLabel = '別案';
+          candidates.push(detour);
+        }
+      }
+
+      var seen = {};
+      return candidates.filter(function(c) {
+        var sig = routeSignature(c.path);
+        if (seen[sig]) return false;
+        seen[sig] = true;
+        return true;
+      }).slice(0, 3);
+    }
+
+    function getPathStuckTotal(path) {
+      return (path || []).reduce(function(acc, area) {
+        var r = fmsRisk[area];
+        return acc + (r && typeof r.stuck_total === 'number' ? r.stuck_total : 0);
+      }, 0);
+    }
+
+    function findNearestSuspendedStops(areaName, limit) {
+      limit = limit || 2;
+      var meta = areasMeta[areaName];
+      if (!meta || !meta.centroid || !busSuspendedData || !busSuspendedData.features) return [];
+      var lat = meta.centroid[1];
+      var lng = meta.centroid[0];
+      var points = [];
+      busSuspendedData.features.forEach(function(feature) {
+        var p = feature.properties || {};
+        var route = p.name || p.id || '運休路線';
+        (p.stops || []).forEach(function(stop) {
+          if (typeof stop.lat !== 'number' || typeof stop.lng !== 'number') return;
+          var d = haversine(lat, lng, stop.lat, stop.lng);
+          points.push({ route: route, stop: stop.name || '停留所', distanceKm: d });
+        });
+      });
+      return points.sort(function(a, b) { return a.distanceKm - b.distanceKm; }).slice(0, limit);
+    }
+
+    function buildNaviModeInsight(result) {
+      var path = (result && result.path) ? result.path : [];
+      if (naviTransportMode === 'car') {
+        var stuck = getPathStuckTotal(path);
+        return '<div class="navi-mode-insight">'
+          + '車向け判断: 直近7日スタック関連 <b>' + stuck + '件</b>（経路周辺合計）。'
+          + '<br>危険度が高い区間では、迂回・時間変更を検討してください。'
+          + '</div>';
+      }
+      if (naviTransportMode === 'walk_bike') {
+        return '<div class="navi-mode-insight">'
+          + '徒歩・自転車向け注意: 歩道情報は未整備のため、<b>推奨経路ではなく注意ルート</b>として表示しています。'
+          + '<br>交差点、狭い道路、夜間視認性に注意してください。'
+          + '</div>';
+      }
+      if (naviTransportMode === 'bus') {
+        var ongoing = (busStatusData && busStatusData.continuing) ? busStatusData.continuing.length : 0;
+        var newInfo = (busStatusData && busStatusData.new_info) ? busStatusData.new_info.length : 0;
+        var fromStops = findNearestSuspendedStops(naviOriginArea, 2);
+        var toStops = findNearestSuspendedStops(naviDestArea, 2);
+        var stopText = '';
+        if (fromStops.length > 0 || toStops.length > 0) {
+          stopText += '<br>最寄り停留所候補: ';
+          var all = fromStops.concat(toStops).slice(0, 3).map(function(x) {
+            return x.stop + '（' + x.route + '）';
+          });
+          stopText += all.join(' / ');
+        }
+        return '<div class="navi-mode-insight">'
+          + 'バス向け情報: 運休・迂回継続 <b>' + ongoing + '件</b> / 新着 <b>' + newInfo + '件</b>。'
+          + '<br>運休中の場合は、徒歩・車モードの代替ルートも確認してください。'
+          + stopText
+          + '</div>';
+      }
+      return '';
+    }
+
+    function renderNaviRouteResult() {
       var container = document.getElementById('navi-result-container');
-
-      if (naviOriginArea === naviDestArea) {
-        container.innerHTML = '<div class="navi-result"><h3>結果</h3><p>出発地と目的地が同じです。</p></div>';
-        return;
-      }
-
-      var result = dijkstra(naviOriginArea, naviDestArea);
-      if (!result) {
-        container.innerHTML = '<div class="navi-result"><h3>結果</h3><p>ルートが見つかりませんでした。接続されていないエリアの可能性があります。</p></div>';
-        return;
-      }
-
+      var result = naviRouteCandidates[naviSelectedRouteIndex];
+      if (!container || !result) return;
       pendingRouteResult = result;
       var html = '<div class="navi-result">';
-      html += '<h3>推奨ルート（' + result.path.length + 'エリア経由）</h3>';
+      var modeTitle = naviTransportMode === 'car' ? '車向けルート' : (naviTransportMode === 'walk_bike' ? '徒歩・自転車向け注意ルート' : 'バス向け移動サポート');
+      html += '<h3>' + modeTitle + '（' + result.path.length + 'エリア経由）</h3>';
+      html += buildNaviModeInsight(result);
+      if (naviRouteCandidates.length > 1) {
+        html += '<div class="navi-route-options">';
+        naviRouteCandidates.forEach(function(c, idx) {
+          var active = idx === naviSelectedRouteIndex ? ' active' : '';
+          html += '<button type="button" class="navi-route-option-btn' + active + '" onclick="selectNaviRoute(' + idx + ')">' + c.profileLabel + '</button>';
+        });
+        html += '</div>';
+      }
 
       result.path.forEach(function(area, i) {
         var w = computeRiskWeight(area);
@@ -1903,6 +2144,32 @@
       html += '<button class="navi-show-map-btn" onclick="showRouteOnMap()">マップで表示</button>';
       html += '</div>';
       container.innerHTML = html;
+    }
+
+    window.selectNaviRoute = function(index) {
+      if (index < 0 || index >= naviRouteCandidates.length) return;
+      naviSelectedRouteIndex = index;
+      renderNaviRouteResult();
+    };
+
+    window.searchRoute = function searchRoute() {
+      if (!naviTransportMode || !naviOriginArea || !naviDestArea) return;
+      var container = document.getElementById('navi-result-container');
+
+      if (naviOriginArea === naviDestArea) {
+        container.innerHTML = '<div class="navi-result"><h3>結果</h3><p>出発地と目的地が同じです。</p></div>';
+        return;
+      }
+
+      var candidates = generateRouteCandidates(naviOriginArea, naviDestArea);
+      if (!candidates || candidates.length === 0) {
+        container.innerHTML = '<div class="navi-result"><h3>結果</h3><p>ルートが見つかりませんでした。接続されていないエリアの可能性があります。</p></div>';
+        return;
+      }
+
+      naviRouteCandidates = candidates;
+      naviSelectedRouteIndex = 0;
+      renderNaviRouteResult();
     };
 
     function buildRouteLayer(result) {
