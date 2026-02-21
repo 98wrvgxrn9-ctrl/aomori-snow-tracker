@@ -3256,11 +3256,14 @@
       const base = spaneData.base;
       const top = spaneData.top_zone;
       const color = spaneColor(base.city_spane);
+      const tempSourceLabel = base.temp_source === 'current_weather' ? '現在気温' : '日次気温';
+      const tempObserved = base.temp_observed_at ? ' / ' + base.temp_observed_at : '';
       spaneDiv.style.display = '';
       spaneDiv.innerHTML =
         '<div style="font-size:10px;font-weight:bold;color:#555;margin-bottom:2px">スパネ度</div>' +
         '<div class="spane-value" style="color:' + color + '">' + base.city_spane + '</div>' +
         '<div class="spane-sub">' + base.temp_avg_c + '℃ × 積雪' + base.snow_depth_cm + 'cm</div>' +
+        '<div class="spane-sub" style="font-size:9px;color:#888">' + tempSourceLabel + tempObserved + '</div>' +
         (top ? '<div class="spane-sub" style="margin-top:3px">最高 ' + top.spane_index + '（' + top.name + '）</div>' : '') +
         '<div class="spane-sub" style="font-size:9px;color:#aaa">' + (spaneData.date || '') + '</div>';
     }

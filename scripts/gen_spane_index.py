@@ -40,18 +40,54 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
-def load_weather(root: Path) -> tuple[float | None, float | None]:
-    """最新の気温・積雪深を返す。当日データがない場合は前日を使う。"""
+def load_daily_weather(root: Path) -> tuple[float | None, float | None, str | None]:
+    """日次CSVから最新の気温・積雪深を返す。"""
     csv_path = root / "data" / "processed" / "fms" / "aomori_snowfall_daily.csv"
     df = pd.read_csv(csv_path, parse_dates=["date"])
     df = df.sort_values("date").reset_index(drop=True)
 
-    valid = df.dropna(subset=["max_snow_depth_cm", "temp_avg_c"])
-    if valid.empty:
+    valid_snow = df.dropna(subset=["max_snow_depth_cm"])
+    valid_temp = df.dropna(subset=["temp_avg_c"])
+    if valid_snow.empty:
+        return None, None, None
+
+    snow_row = valid_snow.iloc[-1]
+    temp_row = valid_temp.iloc[-1] if not valid_temp.empty else None
+    temp = float(temp_row["temp_avg_c"]) if temp_row is not None else None
+    snow = float(snow_row["max_snow_depth_cm"])
+    snow_date = pd.to_datetime(snow_row["date"]).strftime("%Y-%m-%d")
+    return temp, snow, snow_date
+
+
+def load_current_temperature(root: Path) -> tuple[float | None, str | None]:
+    """current_weather.json から現在気温と観測時刻を返す。"""
+    path = root / "docs" / "data" / "current_weather.json"
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        return None, None
+    except json.JSONDecodeError:
         return None, None
 
-    row = valid.iloc[-1]
-    return float(row["temp_avg_c"]), float(row["max_snow_depth_cm"])
+    current = data.get("current", {}) if isinstance(data, dict) else {}
+    temp = current.get("temperature_c")
+    observed_at = current.get("observed_at")
+    if temp is None:
+        return None, None
+    return float(temp), str(observed_at) if observed_at else None
+
+
+def load_weather(root: Path) -> tuple[float | None, float | None, str, str | None, str | None]:
+    """気温・積雪深を返す。気温は現在気温JSONを優先し、失敗時は日次CSVにフォールバック。"""
+    daily_temp, snow_depth, snow_date = load_daily_weather(root)
+    current_temp, observed_at = load_current_temperature(root)
+
+    if current_temp is not None and snow_depth is not None:
+        return current_temp, snow_depth, "current_weather", observed_at, snow_date
+    if daily_temp is not None and snow_depth is not None:
+        return daily_temp, snow_depth, "daily_weather", None, snow_date
+    return None, None, "none", None, None
 
 
 def load_koku(root: Path) -> list[dict]:
@@ -142,7 +178,7 @@ def main() -> None:
     root = repo_root()
     today = date.today()
 
-    temp_avg_c, snow_depth_cm = load_weather(root)
+    temp_avg_c, snow_depth_cm, temp_source, temp_observed_at, snow_depth_date = load_weather(root)
     if temp_avg_c is None or snow_depth_cm is None:
         print("気象データが取得できませんでした。スキップします。")
         return
@@ -163,7 +199,10 @@ def main() -> None:
         "date": today.isoformat(),
         "base": {
             "temp_avg_c": temp_avg_c,
+            "temp_source": temp_source,
+            "temp_observed_at": temp_observed_at,
             "snow_depth_cm": snow_depth_cm,
+            "snow_depth_date": snow_depth_date,
             "city_spane": city_spane,
         },
         "top_zone": {"name": top[0], **top[1]} if top[0] else None,

@@ -1,0 +1,42 @@
+name: Update Spane Weather
+
+on:
+  schedule:
+    # 30分ごと（UTC）
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update_spane_weather:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests pandas
+
+      - name: Fetch current weather
+        run: python scripts/fetch_current_weather.py
+
+      - name: Generate spane index
+        run: python scripts/gen_spane_index.py
+
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/data/current_weather.json docs/data/spane_index.json data/processed/fms/current_weather.json
+          git diff --staged --quiet && exit 0
+          git commit -m "Update current weather and spane index - $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          git pull --rebase origin main
+          git push
