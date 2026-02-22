@@ -1,17 +1,17 @@
 {
-  "generated": "2026-02-22 11:23",
+  "generated": "2026-02-22 11:45",
   "date": "2026-02-22",
   "base": {
-    "temp_avg_c": 5.7,
+    "temp_avg_c": 5.8,
     "temp_source": "current_weather",
-    "temp_observed_at": "2026-02-22T20:15",
+    "temp_observed_at": "2026-02-22T20:45",
     "snow_depth_cm": 95.0,
     "snow_depth_date": "2026-02-21",
     "city_spane": 9
   },
   "top_zone": {
-    "name": "Ｂ－３－２",
-    "spane_index": 18,
+    "name": "Ｂ－５",
+    "spane_index": 19,
     "level": "中",
     "days_since_clearance": 30
   },
@@ -82,7 +82,7 @@
       "days_since_clearance": 11
     },
     "Ｂ－５": {
-      "spane_index": 18,
+      "spane_index": 19,
       "level": "中",
       "days_since_clearance": 30
     },
@@ -817,7 +817,7 @@
       "days_since_clearance": 11
     },
     "戸山団地２工区": {
-      "spane_index": 12,
+      "spane_index": 13,
       "level": "低",
       "days_since_clearance": 15
     },
