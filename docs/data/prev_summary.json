@@ -1,17 +1,17 @@
 {
-  "date": "2026-02-20",
+  "date": "2026-02-21",
   "koku": {
     "total": 192,
-    "scheduled": 7,
-    "checking": 185,
+    "scheduled": 2,
+    "checking": 190,
     "adjusting": 0,
     "other": 0
   },
   "rosen": {
     "total": 306,
-    "scheduled": 6,
-    "checking": 300,
-    "adjusting": 0,
+    "scheduled": 0,
+    "checking": 298,
+    "adjusting": 8,
     "other": 0
   }
 }
