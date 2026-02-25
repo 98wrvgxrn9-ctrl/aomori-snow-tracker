@@ -1,13 +1,10 @@
-name: 除排雪状況取得
+name: バス運行状況取得
 
 on:
   schedule:
-    # 日本時間 21:00〜翌06:00 の毎時0分に実行（夜間作業帯）
-    # UTC 12:00〜21:00
-    - cron: '0 12-21 * * *'
-    # 日本時間 07:00〜10:00 の毎時0分に実行（朝の更新確認帯）
-    # UTC 22:00〜23:00, 00:00〜01:00
-    - cron: '0 22-23,0-1 * * *'
+    # 日本時間 7:00〜22:00 の毎時0分に実行
+    # UTC 22:00〜13:00
+    - cron: '0 22-23,0-13 * * *'
   workflow_dispatch:  # 手動実行用
 
 permissions:
@@ -20,7 +17,9 @@ jobs:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v6
 
+      # 来シーズン再開時は以下の if: false を削除する
       - name: FMSデータリポジトリをチェックアウト
+        if: false
         uses: actions/checkout@v4
         with:
           repository: 98wrvgxrn9-ctrl/fms-data
@@ -35,31 +34,35 @@ jobs:
       - name: 依存関係インストール
         run: pip install -r requirements.txt
 
+      # 来シーズン再開時は以下の if: false を削除する
       - name: KML取得・解析
+        if: false
         env:
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
         run: python scripts/fetch_kml.py
 
       - name: FMSリスク集計
+        if: false
         env:
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
         run: python scripts/gen_fms_risk.py
 
       - name: 前日サマリー生成
+        if: false
         run: python scripts/gen_prev_summary.py
+
+      - name: 国道除雪状況取得
+        if: false
+        run: python scripts/fetch_kokudo_status.py
 
       - name: バス運行状況取得
         run: python scripts/fetch_bus_status.py
-
-      - name: 国道除雪状況取得
-        run: python scripts/fetch_kokudo_status.py
 
       - name: 変更をコミット・プッシュ
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/ docs/data/
-          git diff --staged --quiet || git commit -m "data: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M') の状況を記録"
-          # リモートに新しいコミットがあればマージ（データファイルは常にこちらを優先）
+          git add docs/data/
+          git diff --staged --quiet || git commit -m "data: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M') バス運行状況を更新"
           git pull origin main --no-rebase -X ours || true
           git push origin main
