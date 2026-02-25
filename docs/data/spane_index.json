@@ -1,17 +1,17 @@
 {
-  "generated": "2026-02-25 02:22",
+  "generated": "2026-02-25 03:35",
   "date": "2026-02-25",
   "base": {
     "temp_avg_c": 3.6,
     "temp_source": "current_weather",
     "temp_observed_at": "2026-02-25T11:15",
-    "snow_depth_cm": 88.0,
-    "snow_depth_date": "2026-02-23",
-    "city_spane": 5
+    "snow_depth_cm": 83.0,
+    "snow_depth_date": "2026-02-24",
+    "city_spane": 4
   },
   "top_zone": {
     "name": "Ｂ－５",
-    "spane_index": 11,
+    "spane_index": 10,
     "level": "低",
     "days_since_clearance": 30
   },
@@ -22,7 +22,7 @@
       "days_since_clearance": 14
     },
     "Ａ－２": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
@@ -42,7 +42,7 @@
       "days_since_clearance": 14
     },
     "Ａ－６": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
@@ -57,17 +57,17 @@
       "days_since_clearance": 14
     },
     "Ｂ－２－２": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
     "Ｂ－３－１": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
     "Ｂ－３－２": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
@@ -82,7 +82,7 @@
       "days_since_clearance": 14
     },
     "Ｂ－５": {
-      "spane_index": 11,
+      "spane_index": 10,
       "level": "低",
       "days_since_clearance": 30
     },
@@ -137,7 +137,7 @@
       "days_since_clearance": 14
     },
     "Ｂ－１２－２": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
@@ -157,17 +157,17 @@
       "days_since_clearance": 14
     },
     "Ｃ－２－１": {
-      "spane_index": 9,
+      "spane_index": 8,
       "level": "低",
       "days_since_clearance": 20
     },
     "Ｃ－２－２": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｃ－３－１": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
@@ -177,7 +177,7 @@
       "days_since_clearance": 14
     },
     "Ｃ－４－１": {
-      "spane_index": 9,
+      "spane_index": 8,
       "level": "低",
       "days_since_clearance": 20
     },
@@ -307,12 +307,12 @@
       "days_since_clearance": 14
     },
     "Ｅ－１－１": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｅ－１－２": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
@@ -322,7 +322,7 @@
       "days_since_clearance": 14
     },
     "Ｅ－３－１": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
@@ -367,7 +367,7 @@
       "days_since_clearance": 14
     },
     "Ｅ－８": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
@@ -407,7 +407,7 @@
       "days_since_clearance": 14
     },
     "Ｆ－２－２Ｃ": {
-      "spane_index": 7,
+      "spane_index": 6,
       "level": "低",
       "days_since_clearance": 14
     },
@@ -427,7 +427,7 @@
       "days_since_clearance": 14
     },
     "Ｆ－５": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
@@ -442,7 +442,7 @@
       "days_since_clearance": 14
     },
     "Ｆ－７": {
-      "spane_index": 9,
+      "spane_index": 8,
       "level": "低",
       "days_since_clearance": 20
     },
@@ -467,7 +467,7 @@
       "days_since_clearance": 14
     },
     "Ｆ－１１": {
-      "spane_index": 7,
+      "spane_index": 6,
       "level": "低",
       "days_since_clearance": 14
     },
@@ -492,7 +492,7 @@
       "days_since_clearance": 14
     },
     "Ｇ－４": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
@@ -527,12 +527,12 @@
       "days_since_clearance": 14
     },
     "Ｇ－１０": {
-      "spane_index": 9,
+      "spane_index": 8,
       "level": "低",
       "days_since_clearance": 20
     },
     "Ｈ－１－１": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
@@ -572,7 +572,7 @@
       "days_since_clearance": 14
     },
     "Ｉ－２－２": {
-      "spane_index": 7,
+      "spane_index": 6,
       "level": "低",
       "days_since_clearance": 14
     },
@@ -642,27 +642,27 @@
       "days_since_clearance": 14
     },
     "Ｊ－７": {
-      "spane_index": 9,
+      "spane_index": 8,
       "level": "低",
       "days_since_clearance": 20
     },
     "Ｊ－８": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｊ－９": {
-      "spane_index": 9,
+      "spane_index": 8,
       "level": "低",
       "days_since_clearance": 20
     },
     "Ｊ－１０": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｊ－１１": {
-      "spane_index": 9,
+      "spane_index": 8,
       "level": "低",
       "days_since_clearance": 20
     },
@@ -797,7 +797,7 @@
       "days_since_clearance": 14
     },
     "幸畑阿部野工区": {
-      "spane_index": 9,
+      "spane_index": 8,
       "level": "低",
       "days_since_clearance": 20
     },
@@ -807,7 +807,7 @@
       "days_since_clearance": 14
     },
     "月見野工区": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
@@ -817,12 +817,12 @@
       "days_since_clearance": 14
     },
     "戸山団地２工区": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
     "戸山団地３工区": {
-      "spane_index": 9,
+      "spane_index": 8,
       "level": "低",
       "days_since_clearance": 20
     },
@@ -837,7 +837,7 @@
       "days_since_clearance": 14
     },
     "久栗坂工区": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
@@ -847,27 +847,27 @@
       "days_since_clearance": 14
     },
     "戸山工区": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
     "桑原工区": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
     "宮田工区": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
     "諏訪沢工区": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
     "後潟工区": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
@@ -877,7 +877,7 @@
       "days_since_clearance": 14
     },
     "奥内１工区": {
-      "spane_index": 9,
+      "spane_index": 8,
       "level": "低",
       "days_since_clearance": 20
     },
@@ -887,7 +887,7 @@
       "days_since_clearance": 14
     },
     "飛鳥工区": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
@@ -902,12 +902,12 @@
       "days_since_clearance": 14
     },
     "太陽台団地工区": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
     "高田工区": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
@@ -922,7 +922,7 @@
       "days_since_clearance": 14
     },
     "金浜・上野工区": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
@@ -952,22 +952,22 @@
       "days_since_clearance": 14
     },
     "梨の木工区": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
     "沢山工区": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
     "三本木工区": {
-      "spane_index": 10,
+      "spane_index": 9,
       "level": "低",
       "days_since_clearance": 30
     },
     "矢田工区": {
-      "spane_index": 8,
+      "spane_index": 7,
       "level": "低",
       "days_since_clearance": 18
     },
