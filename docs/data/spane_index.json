@@ -1,12 +1,12 @@
 {
-  "generated": "2026-02-26 02:25",
+  "generated": "2026-02-26 03:31",
   "date": "2026-02-26",
   "base": {
     "temp_avg_c": 7.1,
     "temp_source": "current_weather",
     "temp_observed_at": "2026-02-26T11:15",
-    "snow_depth_cm": 83.0,
-    "snow_depth_date": "2026-02-24",
+    "snow_depth_cm": 84.0,
+    "snow_depth_date": "2026-02-25",
     "city_spane": 9
   },
   "top_zone": {
