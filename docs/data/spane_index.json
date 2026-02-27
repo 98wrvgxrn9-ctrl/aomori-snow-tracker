@@ -1,17 +1,17 @@
 {
-  "generated": "2026-02-27 20:56",
+  "generated": "2026-02-27 21:34",
   "date": "2026-02-27",
   "base": {
-    "temp_avg_c": 4.2,
+    "temp_avg_c": 4.1,
     "temp_source": "current_weather",
-    "temp_observed_at": "2026-02-28T05:45",
+    "temp_observed_at": "2026-02-28T06:30",
     "snow_depth_cm": 82.0,
     "snow_depth_date": "2026-02-26",
     "city_spane": 5
   },
   "top_zone": {
-    "name": "Ｂ－５",
-    "spane_index": 12,
+    "name": "Ｂ－３－２",
+    "spane_index": 11,
     "level": "低",
     "days_since_clearance": 30
   },
@@ -82,7 +82,7 @@
       "days_since_clearance": 16
     },
     "Ｂ－５": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
