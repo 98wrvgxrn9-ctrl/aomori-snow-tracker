@@ -520,6 +520,20 @@
       font-size: 12px;
       padding: 4px 8px;
     }
+    .kids-event-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #ec4899;
+      color: #fff;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 8px rgba(236,72,153,0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      line-height: 1;
+    }
 
     /* SOSボタン */
     #sos-btn {
@@ -916,6 +930,13 @@
     .hub-hero .hub-icon { font-size: 48px; margin-bottom: 8px; }
     .hub-hero h2 { font-size: 20px; font-weight: bold; margin-bottom: 6px; }
     .hub-hero p { font-size: 13px; opacity: 0.8; }
+    .hub-purpose-note {
+      margin-top: 12px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.72);
+      text-align: center;
+      line-height: 1.5;
+    }
     .hub-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1473,30 +1494,31 @@
   <!-- ハブビュー -->
   <div id="hub-view">
     <div class="hub-hero">
-      <div class="hub-icon">&#10052;</div>
+      <div class="hub-icon">&#x1F5FA;</div>
       <h2>青森除雪ウォッチ</h2>
-      <p>除排雪の状況をリアルタイムで確認</p>
+      <p>どのような目的で使いますか？</p>
+      <div class="hub-purpose-note">選んだ目的に合わせて表示レイヤーを切り替えます</div>
     </div>
     <div class="hub-grid">
-      <div class="hub-card" onclick="switchView('map')">
-        <div class="hub-card-icon">&#x1F5FA;</div>
-        <div class="hub-card-title">マップを見る</div>
-        <div class="hub-card-desc">除排雪スケジュール地図</div>
+      <div class="hub-card" onclick="selectPurpose('mobility')">
+        <div class="hub-card-icon">&#x1F68C;</div>
+        <div class="hub-card-title">移動</div>
+        <div class="hub-card-desc">バス運行・道路状況を確認</div>
       </div>
-      <div class="hub-card hub-card-sos" onclick="switchView('sos')">
-        <div class="hub-card-icon">&#x1F198;</div>
-        <div class="hub-card-title">SOS通報</div>
-        <div class="hub-card-desc">スタック等の緊急通報</div>
+      <div class="hub-card" onclick="selectPurpose('living')">
+        <div class="hub-card-icon">&#x1F3E0;</div>
+        <div class="hub-card-title">暮らし</div>
+        <div class="hub-card-desc">生活関連の地図情報</div>
       </div>
-      <div class="hub-card" onclick="switchView('navi')">
-        <div class="hub-card-icon">&#x1F6E3;</div>
-        <div class="hub-card-title">安全ルート</div>
-        <div class="hub-card-desc">スタック回避ルート検索</div>
+      <div class="hub-card" onclick="selectPurpose('safety')">
+        <div class="hub-card-icon">&#x26A0;</div>
+        <div class="hub-card-title">安全</div>
+        <div class="hub-card-desc">除雪・運行・注意情報</div>
       </div>
-      <div class="hub-card" onclick="switchView('dashboard')">
-        <div class="hub-card-icon">&#x1F4CA;</div>
-        <div class="hub-card-title">ダッシュボード</div>
-        <div class="hub-card-desc">サマリー・リスク・バス情報</div>
+      <div class="hub-card" onclick="selectPurpose('learning')">
+        <div class="hub-card-icon">&#x1F393;</div>
+        <div class="hub-card-title">子育て・学び</div>
+        <div class="hub-card-desc">子育て・地域イベント向け</div>
       </div>
     </div>
     <div class="hub-footer">
@@ -1525,16 +1547,17 @@
     <div id="panel">
       <div id="panel-header" style="display:flex;justify-content:space-between;align-items:center">
         <div>
-          <h2>除排雪状況</h2>
-          <p>エリアをクリックすると詳細を表示</p>
+          <h2 id="panel-title">除排雪状況</h2>
+          <p id="panel-subtitle">エリアをクリックすると詳細を表示</p>
         </div>
         <button id="reset-btn" onclick="resetView()" style="background:#1a3a5c;color:#fff;border:none;padding:5px 12px;border-radius:14px;font-size:11px;cursor:pointer;white-space:nowrap">全体表示</button>
       </div>
       <div id="panel-content">
-        <div style="background:#fff8e1;border-left:3px solid #f9a825;padding:8px 10px;margin-bottom:10px;font-size:11px;line-height:1.5;color:#5d4037;border-radius:0 4px 4px 0">
+        <div id="panel-context-note" style="background:#fff8e1;border-left:3px solid #f9a825;padding:8px 10px;margin-bottom:10px;font-size:11px;line-height:1.5;color:#5d4037;border-radius:0 4px 4px 0">
           <strong>データの特性について：</strong>市の公開情報は「作業予定」と表記されていますが、更新タイミングの都合上、実際には前日分の作業報告に近い内容になっていることがあります。当日の最新予定として確定的に扱わず、目安としてご活用ください。
         </div>
         <div id="panel-layer-control"></div>
+        <div id="kids-dashboard" style="display:none"></div>
         <div id="summary"></div>
         <div id="share-bar" style="display:none;text-align:right;margin:-4px 0 8px">
           <button onclick="shareToX()" style="background:#000;color:#fff;border:none;padding:4px 12px;border-radius:14px;font-size:11px;cursor:pointer">𝕏 でシェア</button>
@@ -1558,7 +1581,6 @@
 
   <script src="js/face-score.js"></script>
   <script src="js/road-condition-predict.js"></script>
-  <script src="js/road-condition-svg.js"></script>
   <script>
     // 応援除雪の作業予定期間を [start, end] (Date) で返す
     function parsePeriodDates(str) {
@@ -1616,6 +1638,9 @@
     let busStatusData = null; // 市営バス運行状況
     let kokudoFeatures = []; // 国道除雪状況
     let supportZones = [];   // 応援除雪工区（県財政支援）
+    let kosodateEvents = []; // 子育て・学びイベント
+    let kidsEventMarkers = {}; // 子育てイベントマーカー
+    let kosodateWindow = null; // イベント抽出期間
     let fmsCounts = {};      // FMS関心度（工区/路線名→レベル）
     let fmsRisk = {};        // FMSリスクデータ（工区名→{total, stuck_total, ...}）
     let prevSummary = null;  // 前日サマリー
@@ -1643,14 +1668,227 @@
     const supportLayer = L.layerGroup();
     const kokuLayer = L.layerGroup();
     const spaneLayer = L.layerGroup();
-    const layerVisibility = { koku: true, dump: true, ryusetsuko: true, kokudo: true, bus: false, support: true, spane: false };
+    const kidsAdminLayer = L.layerGroup();
+    const kidsPrivateLayer = L.layerGroup();
+    const layerVisibility = { koku: true, dump: true, ryusetsuko: true, kokudo: true, bus: false, support: true, spane: false, kids_admin: false, kids_private: false };
     const kokuStatusVisibility = { scheduled: true, checking: true, adjusting: true };
-    const layerGroupMap = { koku: kokuLayer, dump: dumpSiteLayer, ryusetsuko: ryusetsukoLayer, kokudo: kokudoLayer, bus: busLayer, support: supportLayer, spane: spaneLayer };
+    const layerGroupMap = { koku: kokuLayer, dump: dumpSiteLayer, ryusetsuko: ryusetsukoLayer, kokudo: kokudoLayer, bus: busLayer, support: supportLayer, spane: spaneLayer, kids_admin: kidsAdminLayer, kids_private: kidsPrivateLayer };
     const FEATURE_VIDEO_URL = ''; // 例: 'https://www.youtube.com/embed/xxxxxxxxxxx'
 
     // ビュー管理
     let currentView = 'hub';
     let dataReady = false;
+    let activePurposeKey = null;
+    let mapHeaderTitle = '除排雪マップ';
+    let panelHeaderTitle = '除排雪状況';
+    let panelHeaderSubtitle = 'エリアをクリックすると詳細を表示';
+    let kidsAccordionState = { monthly: true, recent: true };
+
+    const purposeConfigs = {
+      mobility: {
+        mapTitle: '移動マップ',
+        panelTitle: '移動情報',
+        panelSubtitle: 'バス運行・道路関連レイヤーを表示中',
+        layers: { koku: true, dump: false, ryusetsuko: false, kokudo: true, bus: true, support: false, spane: false, kids_admin: false, kids_private: false },
+      },
+      living: {
+        mapTitle: '暮らしマップ',
+        panelTitle: '暮らし情報',
+        panelSubtitle: '生活関連レイヤーを表示中',
+        layers: { koku: false, dump: true, ryusetsuko: true, kokudo: false, bus: false, support: false, spane: false, kids_admin: false, kids_private: false },
+      },
+      safety: {
+        mapTitle: '安全マップ',
+        panelTitle: '安全情報',
+        panelSubtitle: '安全判断向けに広めの情報を表示中',
+        layers: { koku: true, dump: true, ryusetsuko: true, kokudo: true, bus: true, support: true, spane: true, kids_admin: false, kids_private: false },
+      },
+      learning: {
+        mapTitle: '子育て学びマップ',
+        panelTitle: '子育て学び情報',
+        panelSubtitle: '子育て・子どもイベントを表示中',
+        layers: { koku: false, dump: false, ryusetsuko: false, kokudo: false, bus: false, support: false, spane: false, kids_admin: true, kids_private: true },
+      },
+    };
+
+    function syncMapHeader() {
+      const titleEl = document.getElementById('header-title');
+      if (titleEl && currentView === 'map') {
+        titleEl.textContent = mapHeaderTitle;
+      }
+      const panelTitleEl = document.getElementById('panel-title');
+      const panelSubtitleEl = document.getElementById('panel-subtitle');
+      if (panelTitleEl) panelTitleEl.textContent = panelHeaderTitle;
+      if (panelSubtitleEl) panelSubtitleEl.textContent = panelHeaderSubtitle;
+    }
+
+    function setPanelSectionDisplay(id, display) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.display = display;
+    }
+
+    function kidsCategoryLabel(category) {
+      if (category === 'private_general') return '民間一般';
+      return '行政';
+    }
+
+    function kidsCategoryColor(category) {
+      if (category === 'private_general') return '#0284c7';
+      return '#be185d';
+    }
+
+    function isMonthlyKidsEvent(ev) {
+      const txt = `${ev.month || ''} ${ev.time || ''}`;
+      return txt.includes('毎月') || txt.includes('毎週') || txt.includes('通年') || txt.includes('4月-3月');
+    }
+
+    function renderKidsEventRows(events) {
+      let html = '';
+      events.forEach(function(ev) {
+        const title = ev.title || '子育てイベント';
+        const month = ev.month || '未設定';
+        const time = ev.time || '未設定';
+        const summary = ev.summary || '';
+        const catLabel = kidsCategoryLabel(ev.category);
+        const catColor = kidsCategoryColor(ev.category);
+        const id = ev.id || '';
+        const safeId = id.replace(/'/g, "\\'");
+        html += '<div style="border-top:1px solid #fce7f3;padding:8px 0">';
+        html += '<div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start">';
+        html += '<div style="font-size:13px;font-weight:bold;color:#9d174d;line-height:1.4">' + title + '</div>';
+        html += '<span style="font-size:10px;background:' + catColor + ';color:#fff;padding:2px 6px;border-radius:999px;white-space:nowrap">' + catLabel + '</span>';
+        html += '</div>';
+        html += '<div style="font-size:11px;color:#4b5563;margin-top:3px">何月: ' + month + ' / 何時: ' + time + '</div>';
+        if (summary) html += '<div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.4">' + summary + '</div>';
+        html += '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">';
+        html += '<button type="button" onclick="focusKidsEvent(\'' + safeId + '\')" style="background:#fdf2f8;color:#9d174d;border:1px solid #f9a8d4;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer">地図で見る</button>';
+        html += '<a href="' + (ev.url || '#') + '" target="_blank" rel="noopener" style="background:#be185d;color:#fff;text-decoration:none;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:bold">申込/詳細</a>';
+        html += '</div></div>';
+      });
+      return html;
+    }
+
+    function renderKidsDashboard() {
+      const container = document.getElementById('kids-dashboard');
+      if (!container) return;
+      const count = kosodateEvents.length;
+      const monthlyEvents = kosodateEvents.filter(isMonthlyKidsEvent);
+      const recentEvents = kosodateEvents.filter(ev => !isMonthlyKidsEvent(ev));
+      const monthlyOpen = kidsAccordionState.monthly;
+      const recentOpen = kidsAccordionState.recent;
+      let html = '<div style="background:#fff;border:1px solid #fbcfe8;border-radius:10px;padding:10px 12px;margin-bottom:10px">';
+      html += '<h3 style="font-size:14px;color:#be185d;margin-bottom:6px">子育て・子どもイベント一覧</h3>';
+      html += '<div style="font-size:11px;color:#6b7280;margin-bottom:8px">ピンを押すか、一覧から地図上へ移動できます（' + count + '件）。</div>';
+      if (kosodateWindow && kosodateWindow.start_date && kosodateWindow.end_date) {
+        html += '<div style="font-size:10px;color:#6b7280;margin-bottom:8px">掲載期間: ' + kosodateWindow.start_date + ' 〜 ' + kosodateWindow.end_date + '</div>';
+      }
+      html += '<div style="border-top:1px solid #fce7f3;margin-top:6px">';
+      html += '<button type="button" onclick="toggleKidsAccordion(\'recent\')" style="width:100%;display:flex;justify-content:space-between;align-items:center;background:#eff6ff;border:none;padding:8px 10px;color:#1d4ed8;font-size:12px;font-weight:bold;cursor:pointer">';
+      html += '<span>直近3ヶ月（' + recentEvents.length + '件）</span>';
+      html += '<span>' + (recentOpen ? '▲' : '▼') + '</span></button>';
+      if (recentOpen) {
+        html += renderKidsEventRows(recentEvents);
+      }
+      html += '</div>';
+      html += '<div style="border-top:1px solid #fce7f3;margin-top:8px">';
+      html += '<button type="button" onclick="toggleKidsAccordion(\'monthly\')" style="width:100%;display:flex;justify-content:space-between;align-items:center;background:#fff0f6;border:none;padding:8px 10px;color:#9d174d;font-size:12px;font-weight:bold;cursor:pointer">';
+      html += '<span>毎月分（' + monthlyEvents.length + '件）</span>';
+      html += '<span>' + (monthlyOpen ? '▲' : '▼') + '</span></button>';
+      if (monthlyOpen) {
+        html += renderKidsEventRows(monthlyEvents);
+      }
+      html += '</div>';
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    window.toggleKidsAccordion = function(section) {
+      if (section !== 'monthly' && section !== 'recent') return;
+      kidsAccordionState[section] = !kidsAccordionState[section];
+      renderKidsDashboard();
+    };
+
+    window.focusKidsEvent = function(eventId) {
+      const entry = kidsEventMarkers[eventId];
+      if (!entry) return;
+      const targetKey = entry.category === 'private_general' ? 'kids_private' : 'kids_admin';
+      if (!layerVisibility[targetKey]) {
+        layerVisibility[targetKey] = true;
+        layerGroupMap[targetKey].addTo(map);
+        updateToggleCheckbox(targetKey);
+        updateLegend();
+      }
+      map.setView(entry.marker.getLatLng(), 14);
+      entry.marker.openPopup();
+    };
+
+    function updatePurposePanelLayout() {
+      const isKidsMode = activePurposeKey === 'learning';
+      const panelNote = document.getElementById('panel-context-note');
+      if (panelNote) panelNote.style.display = isKidsMode ? 'none' : 'block';
+      setPanelSectionDisplay('summary', isKidsMode ? 'none' : 'block');
+      setPanelSectionDisplay('share-bar', 'none');
+      setPanelSectionDisplay('fms-risk-panel', isKidsMode ? 'none' : 'block');
+      setPanelSectionDisplay('selected-info', isKidsMode ? 'none' : 'block');
+      setPanelSectionDisplay('x-posts-container', isKidsMode ? 'none' : 'block');
+      setPanelSectionDisplay('area-list-section', 'none');
+      setPanelSectionDisplay('bus-status', isKidsMode ? 'none' : 'block');
+      setPanelSectionDisplay('kids-dashboard', isKidsMode ? 'block' : 'none');
+      if (isKidsMode) renderKidsDashboard();
+      renderPanelLayerControl();
+    }
+
+    function applyLayerPreset(preset) {
+      if (!preset) return;
+      Object.keys(layerVisibility).forEach(function(key) {
+        if (!Object.prototype.hasOwnProperty.call(preset, key)) return;
+        layerVisibility[key] = !!preset[key];
+        const group = layerGroupMap[key];
+        if (layerVisibility[key]) {
+          group.addTo(map);
+        } else {
+          map.removeLayer(group);
+        }
+        updateToggleCheckbox(key);
+      });
+      if (!layerVisibility.koku) {
+        selectedLayer = null;
+        map.closePopup();
+      } else {
+        applyKokuStatusFilter();
+      }
+      busLayersVisible = layerVisibility.bus;
+      const btn = document.getElementById('bus-map-toggle');
+      if (btn) {
+        if (busLayersVisible) {
+          btn.textContent = '🗺 地図から非表示';
+          btn.style.background = '#dc2626';
+        } else {
+          btn.textContent = '🗺 地図に表示';
+          btn.style.background = '#f59e0b';
+        }
+      }
+      renderSpaneLayer();
+      renderSpanePanel();
+      updateLegend();
+    }
+
+    window.selectPurpose = function(key) {
+      const config = purposeConfigs[key];
+      if (!config) {
+        switchView('map');
+        return;
+      }
+      activePurposeKey = key;
+      mapHeaderTitle = config.mapTitle;
+      panelHeaderTitle = config.panelTitle;
+      panelHeaderSubtitle = config.panelSubtitle;
+      switchView('map');
+      applyLayerPreset(config.layers);
+      syncMapHeader();
+      updatePurposePanelLayout();
+    };
 
     window.switchView = function(view) {
       if (view === 'sos') {
@@ -1674,12 +1912,20 @@
         document.getElementById('hub-view').style.display = 'flex';
         backBtn.style.display = 'none';
         titleEl.textContent = '青森市 除排雪スケジュールマップ';
+        mapHeaderTitle = '除排雪マップ';
+        panelHeaderTitle = '除排雪状況';
+        panelHeaderSubtitle = 'エリアをクリックすると詳細を表示';
+        activePurposeKey = null;
+        syncMapHeader();
+        updatePurposePanelLayout();
         if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
       } else if (view === 'map') {
         document.getElementById('main').style.display = 'flex';
         document.getElementById('sos-btn').style.display = 'flex';
         backBtn.style.display = 'block';
-        titleEl.textContent = '除排雪マップ';
+        titleEl.textContent = mapHeaderTitle;
+        syncMapHeader();
+        updatePurposePanelLayout();
         if (!naviPickMode) hideNaviPickBanner();
         setTimeout(function() {
           map.invalidateSize();
@@ -2846,6 +3092,14 @@
 
     // 全体表示に戻す
     window.resetView = function() {
+      if (activePurposeKey === 'learning') {
+        applyLayerPreset(purposeConfigs.learning.layers);
+        document.getElementById('selected-info').innerHTML = '';
+        document.getElementById('x-posts-container').innerHTML = '';
+        map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+        document.getElementById('panel-content').scrollTop = 0;
+        return;
+      }
       // フィルター解除
       activeCardType = null;
       activeCardStatus = null;
@@ -2955,6 +3209,15 @@
           html += '<div class="legend-item"><span class="legend-color" style="background:#795548"></span>危 (70〜)</div>';
         }
       }
+      if (layerVisibility.kids_admin || layerVisibility.kids_private) {
+        html += '<div class="legend-section">子育て学び</div>';
+        if (layerVisibility.kids_admin) {
+          html += '<div class="legend-item"><span style="background:#be185d;color:#fff;width:10px;height:10px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">★</span> 行政</div>';
+        }
+        if (layerVisibility.kids_private) {
+          html += '<div class="legend-item"><span style="background:#0284c7;color:#fff;width:10px;height:10px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0">★</span> 民間一般</div>';
+        }
+      }
 
       legendDiv.innerHTML = html || '<span style="color:#aaa">凡例なし</span>';
     }
@@ -2981,25 +3244,42 @@
       html += '🗂 レイヤー <span style="font-size:10px">▼</span></div>';
       html += '<div class="layer-control-body" id="panel-lc-body">';
 
-      const layerGroups = [
-        {
-          label: '除雪',
-          items: [
-            { key: 'koku',    label: '工区・路線除雪（市）', icon: '<span style="display:inline-block;width:14px;height:14px;background:#e74c3c;opacity:0.5;border:1px solid #e74c3c;border-radius:2px"></span>' },
-            { key: 'support', label: '応援除雪（県）',       icon: '<span style="display:inline-block;width:14px;height:14px;background:#2e7d32;opacity:0.5;border:1px solid #2e7d32;border-radius:2px"></span>' },
-            { key: 'kokudo',  label: '国道除雪（国）',       icon: '<span style="display:inline-block;width:14px;height:4px;background:#f1c40f;border-radius:2px"></span>' },
+      const layerGroups = activePurposeKey === 'learning'
+        ? [
+            {
+              label: '子育て学び',
+              items: [
+                { key: 'kids_admin', label: '子育てイベント（行政）', icon: '<span style="background:#be185d;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px">★</span>' },
+                { key: 'kids_private', label: '子育てイベント（民間一般）', icon: '<span style="background:#0284c7;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px">★</span>' },
+              ]
+            },
           ]
-        },
-        {
-          label: 'その他',
-          items: [
-            { key: 'dump',       label: '雪捨て場',         icon: '<span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px">&#10052;</span>' },
-            { key: 'ryusetsuko', label: '流雪溝施設',       icon: '<span style="background:#3498db;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px">💧</span>' },
-            { key: 'bus',        label: 'バス運休区間',     icon: '<span style="display:inline-block;width:14px;height:4px;background:#dc2626;border-radius:2px"></span>' },
-            { key: 'spane',      label: 'スパネ度（泥跳ね）', icon: '<span style="display:inline-block;width:14px;height:14px;background:#f39c12;opacity:0.8;border:1px solid #e67e22;border-radius:2px"></span>' },
-          ]
-        },
-      ];
+        : [
+            {
+              label: '安全',
+              items: [
+                { key: 'koku',    label: '工区・路線除雪（市）', icon: '<span style="display:inline-block;width:14px;height:14px;background:#e74c3c;opacity:0.5;border:1px solid #e74c3c;border-radius:2px"></span>' },
+                { key: 'support', label: '応援除雪（県）',       icon: '<span style="display:inline-block;width:14px;height:14px;background:#2e7d32;opacity:0.5;border:1px solid #2e7d32;border-radius:2px"></span>' },
+                { key: 'kokudo',  label: '国道除雪（国）',       icon: '<span style="display:inline-block;width:14px;height:4px;background:#f1c40f;border-radius:2px"></span>' },
+                { key: 'dump',       label: '雪捨て場',         icon: '<span style="background:#2ecc71;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px">&#10052;</span>' },
+                { key: 'ryusetsuko', label: '流雪溝施設',       icon: '<span style="background:#3498db;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:8px">💧</span>' },
+                { key: 'spane',      label: 'スパネ度（泥跳ね）', icon: '<span style="display:inline-block;width:14px;height:14px;background:#f39c12;opacity:0.8;border:1px solid #e67e22;border-radius:2px"></span>' },
+              ]
+            },
+            {
+              label: '移動',
+              items: [
+                { key: 'bus', label: 'バス運休区間', icon: '<span style="display:inline-block;width:14px;height:4px;background:#dc2626;border-radius:2px"></span>' },
+              ]
+            },
+            {
+              label: '子育て学び',
+              items: [
+                { key: 'kids_admin', label: '子育てイベント（行政）', icon: '<span style="background:#be185d;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px">★</span>' },
+                { key: 'kids_private', label: '子育てイベント（民間一般）', icon: '<span style="background:#0284c7;color:#fff;width:14px;height:14px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px">★</span>' },
+              ]
+            },
+          ];
 
       layerGroups.forEach(function({ label: groupLabel, items }) {
         html += `<div style="font-size:10px;font-weight:bold;color:#888;margin:6px 0 2px;padding-left:2px;border-bottom:1px solid #eee">${groupLabel}</div>`;
@@ -3210,6 +3490,16 @@
         .then(res => res.ok ? res.json() : Promise.reject(res.status))
         .then(data => { supportZones = data.features || []; })
         .catch(err => { console.warn('応援除雪工区読み込み失敗:', err); supportZones = []; });
+    }
+
+    function loadKosodateEvents() {
+      return freshFetch('data/kosodate_events.json')
+        .then(res => res.ok ? res.json() : Promise.reject(res.status))
+        .then(data => {
+          kosodateEvents = data.items || [];
+          kosodateWindow = data.window || null;
+        })
+        .catch(err => { console.warn('子育てイベント読み込み失敗:', err); kosodateEvents = []; kosodateWindow = null; });
     }
 
     // スパネ度読み込み
@@ -3475,6 +3765,7 @@
       loadBusSuspended(),
       loadSupportZones(),
       loadSpaneIndex(),
+      loadKosodateEvents(),
     ]).then(([kokuFeatures, rosenFeatures]) => {
       // スパネ度パネル描画・レイヤー初期化
       renderSpanePanel();
@@ -3702,6 +3993,50 @@
       });
       if (layerVisibility.support) supportLayer.addTo(map);
 
+      // 子育て・学びイベントマーカー表示
+      kidsAdminLayer.clearLayers();
+      kidsPrivateLayer.clearLayers();
+      kidsEventMarkers = {};
+      kosodateEvents.forEach(ev => {
+        if (ev.lat == null || ev.lng == null) return;
+        const catLabel = kidsCategoryLabel(ev.category);
+        const catColor = kidsCategoryColor(ev.category);
+        const icon = L.divIcon({
+          className: '',
+          html: '<div class="kids-event-icon" style="background:' + catColor + '">★</div>',
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        });
+        const marker = L.marker([ev.lat, ev.lng], { icon: icon });
+        const popupHtml = [
+          `<div style="min-width:220px">`,
+          `<div style="margin-bottom:4px"><span style="font-size:10px;background:${catColor};color:#fff;padding:2px 6px;border-radius:999px">${catLabel}</span></div>`,
+          `<div style="font-size:14px;font-weight:bold;color:#be185d;margin-bottom:4px">${ev.title || '子育てイベント'}</div>`,
+          `<div style="font-size:12px;line-height:1.6">`,
+          `<div><b>何月:</b> ${ev.month || '未設定'}</div>`,
+          `<div><b>何時:</b> ${ev.time || '未設定'}</div>`,
+          `<div><b>場所:</b> ${ev.place || '未設定'}</div>`,
+          `<div><b>内容:</b> ${ev.summary || '未設定'}</div>`,
+          ev.fee ? `<div><b>参加費:</b> ${ev.fee}</div>` : '',
+          `</div>`,
+          `<div style="margin-top:8px">`,
+          `<a href="${ev.url || '#'}" target="_blank" rel="noopener" style="display:inline-block;background:#be185d;color:#fff;text-decoration:none;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:bold">${ev.apply || '申し込みはこちらから'}</a>`,
+          `</div>`,
+          ev.source ? `<div style="font-size:10px;color:#888;margin-top:6px">出典: ${ev.source}</div>` : '',
+          `</div>`,
+        ].join('');
+        marker.bindPopup(popupHtml);
+        marker.bindTooltip(ev.title || '子育てイベント', { direction: 'top', className: 'dump-tooltip' });
+        if (ev.category === 'private_general') {
+          kidsPrivateLayer.addLayer(marker);
+        } else {
+          kidsAdminLayer.addLayer(marker);
+        }
+        if (ev.id) kidsEventMarkers[ev.id] = { marker: marker, category: ev.category || 'administration' };
+      });
+      if (layerVisibility.kids_admin) kidsAdminLayer.addTo(map);
+      if (layerVisibility.kids_private) kidsPrivateLayer.addTo(map);
+
       buildSummary(kokuFeatures, rosenFeatures);
       showBusStatus();
       showFmsRiskPanel();
@@ -3721,6 +4056,10 @@
       dataReady = true;
       if (currentView === 'dashboard') renderDashboard();
       if (currentView === 'navi') renderNaviView();
+      if (activePurposeKey === 'learning') {
+        renderKidsDashboard();
+        updatePurposePanelLayout();
+      }
 
       // ディープリンク: ?area=工区名 でマップ遷移＋エリア選択
       const urlParams = new URLSearchParams(window.location.search);
