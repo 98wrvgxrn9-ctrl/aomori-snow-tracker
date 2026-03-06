@@ -1,978 +1,978 @@
 {
-  "generated": "2026-03-06 06:53",
+  "generated": "2026-03-06 07:39",
   "date": "2026-03-06",
   "base": {
-    "temp_avg_c": 6.6,
+    "temp_avg_c": 6.1,
     "temp_source": "current_weather",
-    "temp_observed_at": "2026-03-06T15:45",
+    "temp_observed_at": "2026-03-06T16:30",
     "snow_depth_cm": 58.0,
     "snow_depth_date": "2026-03-05",
-    "city_spane": 6
+    "city_spane": 5
   },
   "top_zone": {
     "name": "Ｅ－７－１",
-    "spane_index": 14,
+    "spane_index": 13,
     "level": "低",
     "days_since_clearance": 23
   },
   "zones": {
     "Ａ－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ａ－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "Ａ－３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ａ－４": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ａ－５": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ａ－６": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "Ｂ－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－２－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－２－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "Ｂ－３－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "Ｂ－３－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｂ－４－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－４－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－５": {
-      "spane_index": 13,
+      "spane_index": 12,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｂ－６": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－７": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－８": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－９": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－１０－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－１０－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－１１－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－１１－２Ａ": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－１１－２Ｂ": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－１２－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｂ－１２－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｂ－１３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｃ－１－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｃ－１－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｃ－２－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 29
     },
     "Ｃ－２－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｃ－３－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｃ－３－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｃ－４－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 29
     },
     "Ｃ－４－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｃ－５": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｃ－６": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｃ－７": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｃ－８": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－１－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－１－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－４": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－５": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－６－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－６－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－７": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－８": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－９": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－１０": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－１１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－１２－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－１２－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－１３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－１４": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－１５": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－１６": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｄ－１７": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－１－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｅ－１－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｅ－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－３－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "Ｅ－３－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－３－３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－４－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－４－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－５": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－６": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－７－１": {
-      "spane_index": 14,
+      "spane_index": 13,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－７－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－８": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "Ｅ－９": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－１０－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｅ－１０－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－２－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－２－２Ａ": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－２－２Ｂ": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－２－２Ｃ": {
-      "spane_index": 13,
+      "spane_index": 12,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－４－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－４－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－５": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｆ－６－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－６－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－７": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 29
     },
     "Ｆ－８－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－８－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－９": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－１０": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｆ－１１": {
-      "spane_index": 13,
+      "spane_index": 12,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｇ－１－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｇ－１－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｇ－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｇ－３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｇ－４": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｇ－５": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｇ－６－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｇ－６－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｇ－７": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｇ－８": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｇ－９": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｇ－１０": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 29
     },
     "Ｈ－１－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "Ｈ－１－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｈ－２－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｈ－２－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｈ－３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｈ－４": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｉ－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｉ－２－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｉ－２－２": {
-      "spane_index": 13,
+      "spane_index": 12,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｉ－２－３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｉ－３－１Ａ": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｉ－３－１Ｂ": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｉ－３－１Ｃ": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｉ－３－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－１－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－１－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－４": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－５－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－５－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－６": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－７": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 29
     },
     "Ｊ－８": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｊ－９": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 29
     },
     "Ｊ－１０": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "Ｊ－１１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 29
     },
     "Ｊ－１２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－１３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－１４": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－１５": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－１６－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－１６－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－１７": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｊ－１８": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｋ－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｋ－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｋ－３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｋ－４": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｌ－１": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｌ－２": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｌ－３": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｌ－４": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｌ－５": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｌ－６": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｌ－７": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｌ－８": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "Ｌ－９": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "細越工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "問屋町工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "松元台団地工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "幸畑団地１工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "幸畑団地２工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "幸畑阿部野工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 29
     },
     "幸畑谷脇工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "月見野工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "戸山団地１工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "戸山団地２工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "戸山団地３工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 29
     },
     "戸山団地４工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "野内工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "久栗坂工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "浅虫工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "戸山工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "桑原工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "宮田工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "諏訪沢工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "後潟工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "内真部工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "奥内１工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 29
     },
     "奥内２工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "飛鳥工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "白旗野工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "鶴ケ坂・孫内工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "太陽台団地工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "高田工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "荒川・八ツ役１工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "荒川・八ツ役２工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "金浜・上野工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "大別内工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "野木工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "合子沢工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "横内１工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "横内２工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     },
     "梨の木工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "沢山工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "三本木工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 30
     },
     "矢田工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 27
     },
     "下湯工区": {
-      "spane_index": 12,
+      "spane_index": 11,
       "level": "低",
       "days_since_clearance": 23
     }
