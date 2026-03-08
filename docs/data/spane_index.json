@@ -1,10 +1,10 @@
 {
-  "generated": "2026-03-08 20:28",
+  "generated": "2026-03-08 20:52",
   "date": "2026-03-08",
   "base": {
-    "temp_avg_c": -1.0,
+    "temp_avg_c": -0.9,
     "temp_source": "current_weather",
-    "temp_observed_at": "2026-03-09T05:15",
+    "temp_observed_at": "2026-03-09T05:45",
     "snow_depth_cm": 50.0,
     "snow_depth_date": "2026-03-07",
     "city_spane": 0
