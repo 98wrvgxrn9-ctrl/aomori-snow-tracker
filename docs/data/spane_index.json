@@ -1,19 +1,19 @@
 {
-  "generated": "2026-03-27 06:45",
+  "generated": "2026-03-27 08:00",
   "date": "2026-03-27",
   "base": {
-    "temp_avg_c": 9.6,
+    "temp_avg_c": 9.1,
     "temp_source": "current_weather",
-    "temp_observed_at": "2026-03-27T15:45",
+    "temp_observed_at": "2026-03-27T17:00",
     "snow_depth_cm": 3.0,
     "snow_depth_date": "2026-03-21",
     "city_spane": 0
   },
   "top_zone": {
-    "name": "Ｂ－５",
+    "name": "Ｅ－７－１",
     "spane_index": 1,
     "level": "低",
-    "days_since_clearance": 30
+    "days_since_clearance": 44
   },
   "zones": {
     "Ａ－１": {
@@ -82,7 +82,7 @@
       "days_since_clearance": 44
     },
     "Ｂ－５": {
-      "spane_index": 1,
+      "spane_index": 0,
       "level": "低",
       "days_since_clearance": 30
     },
@@ -407,7 +407,7 @@
       "days_since_clearance": 44
     },
     "Ｆ－２－２Ｃ": {
-      "spane_index": 1,
+      "spane_index": 0,
       "level": "低",
       "days_since_clearance": 44
     },
@@ -467,7 +467,7 @@
       "days_since_clearance": 44
     },
     "Ｆ－１１": {
-      "spane_index": 1,
+      "spane_index": 0,
       "level": "低",
       "days_since_clearance": 44
     },
@@ -572,7 +572,7 @@
       "days_since_clearance": 44
     },
     "Ｉ－２－２": {
-      "spane_index": 1,
+      "spane_index": 0,
       "level": "低",
       "days_since_clearance": 44
     },
