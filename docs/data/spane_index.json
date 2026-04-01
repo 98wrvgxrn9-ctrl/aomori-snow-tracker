@@ -1,17 +1,17 @@
 {
-  "generated": "2026-04-01 09:46",
+  "generated": "2026-04-01 10:58",
   "date": "2026-04-01",
   "base": {
-    "temp_avg_c": 9.0,
+    "temp_avg_c": 7.7,
     "temp_source": "current_weather",
-    "temp_observed_at": "2026-04-01T18:45",
+    "temp_observed_at": "2026-04-01T19:45",
     "snow_depth_cm": 3.0,
     "snow_depth_date": "2026-03-21",
     "city_spane": 0
   },
   "top_zone": {
-    "name": "Ｅ－７－１",
-    "spane_index": 1,
+    "name": "Ａ－１",
+    "spane_index": 0,
     "level": "低",
     "days_since_clearance": 49
   },
@@ -357,7 +357,7 @@
       "days_since_clearance": 49
     },
     "Ｅ－７－１": {
-      "spane_index": 1,
+      "spane_index": 0,
       "level": "低",
       "days_since_clearance": 49
     },
