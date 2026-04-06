@@ -1,0 +1,13 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "sos": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.val() === null || (newData.hasChildren(['uid', 'vehicle', 'type', 'lat', 'lng', 'created_at', 'expires_at']) && newData.child('uid').val() === auth.uid && (newData.child('vehicle').val() === '軽自動車' || newData.child('vehicle').val() === '普通車' || newData.child('vehicle').val() === '大型車' || newData.child('vehicle').val() === 'その他') && (newData.child('type').val() === 'スタック' || newData.child('type').val() === '脱輪' || newData.child('type').val() === 'バッテリー上がり' || newData.child('type').val() === 'その他') && newData.child('lat').isNumber() && newData.child('lat').val() >= -90 && newData.child('lat').val() <= 90 && newData.child('lng').isNumber() && newData.child('lng').val() >= -180 && newData.child('lng').val() <= 180 && newData.child('created_at').isNumber() && newData.child('created_at').val() >= now - 300000 && newData.child('created_at').val() <= now + 300000 && newData.child('expires_at').isNumber() && newData.child('expires_at').val() >= now && newData.child('expires_at').val() <= now + 2100000 && newData.child('expires_at').val() - newData.child('created_at').val() <= 1800000)"
+      }
+    }
+  }
+}

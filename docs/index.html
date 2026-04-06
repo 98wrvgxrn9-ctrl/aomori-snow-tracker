@@ -1418,8 +1418,8 @@
       <ul>
         <li>SOS機能は、スタック等の状況を地図上に共有する機能です。救助のマッチングや通知は行いません。</li>
         <li>緊急時は必ず110（警察）または119（消防）に電話してください。</li>
-        <li>SOS情報は30分で自動的に消滅します。</li>
-        <li>個人を特定する情報（名前・電話番号等）は送信されません。</li>
+        <li>SOS情報は30分で自動的に消滅し、公開位置は約100m単位に丸めて表示されます。</li>
+        <li>個人を特定する情報（名前・電話番号等）や自由記述メモは送信されません。</li>
         <li>本機能の利用により生じたいかなる損害についても、運営者は一切の責任を負いません。</li>
       </ul>
 
@@ -1445,6 +1445,7 @@
         <p style="font-size:12px;font-weight:normal;color:#666;margin-top:8px">
           この機能は地図上にSOS情報を共有するだけです。<br>
           救助の保証はありません。<br>
+          公開位置は約100m単位に丸めて表示されます。<br>
           命に関わる場合は必ず110/119に電話してください。
         </p>
       </div>
@@ -1477,15 +1478,18 @@
         </select>
       </div>
       <div class="sos-form-group">
-        <label>補足（任意）</label>
-        <textarea id="sos-note" placeholder="例: 道路脇の雪山にはまって動けない"></textarea>
+        <div style="font-size:12px;line-height:1.6;color:#555;background:#f8fafc;border:1px solid #dbeafe;border-radius:8px;padding:10px 12px">
+          公開されるのは車種・状況・おおよその位置のみです。<br>
+          正確な現在地と自由記述メモは送信しません。
+        </div>
       </div>
       <button class="sos-submit-btn" id="sos-submit-btn" onclick="submitSos()" disabled>
         SOSを送信
       </button>
       <button class="sos-cancel-btn" onclick="closeSosModal()">キャンセル</button>
       <div style="font-size:10px;color:#aaa;text-align:center;margin-top:8px">
-        ※ 名前・個人情報は送信されません<br>
+        ※ 名前・個人情報・自由記述メモは送信されません<br>
+        ※ 位置は約100m単位に丸めて共有されます<br>
         ※ 30分で自動的に消えます
       </div>
     </div>
@@ -4117,44 +4121,88 @@
       appId: "1:882333353749:web:3606d938bacc3f37ca4b1c"
     };
 
+    const SOS_TTL_MS = 30 * 60 * 1000;
+    const SOS_COORD_PRECISION = 3;
+    const SOS_ALLOWED_VEHICLES = ['軽自動車', '普通車', '大型車', 'その他'];
+    const SOS_ALLOWED_TYPES = ['スタック', '脱輪', 'バッテリー上がり', 'その他'];
     let sosDb = null;
     let sosAuth = null;
     let sosUid = null;
     let sosMarkers = {};  // id -> { marker, data }
-    let mySosId = null;   // 自分が投稿したSOSのID（ブラウザセッション内）
+    let mySosId = null;   // 自分が投稿したSOSのID（UID固定）
+    let sosListenerStarted = false;
+
+    function roundSosCoordinate(value) {
+      return Number(Number(value).toFixed(SOS_COORD_PRECISION));
+    }
+
+    function buildSosPopupHtml(id, sos, now) {
+      const createdAt = Number(sos.created_at || now);
+      const elapsed = Math.max(0, Math.floor((now - createdAt) / 60000));
+      const elapsedText = elapsed < 1 ? '1分未満' : elapsed + '分前';
+
+      let popupHtml = '<div style="min-width:170px">';
+      popupHtml += '<div style="font-size:14px;font-weight:bold;color:#dc2626;margin-bottom:6px">🆘 SOS</div>';
+      popupHtml += '<div style="font-size:12px;margin-bottom:3px"><b>車種:</b> ' + escapeHtml(sos.vehicle || '-') + '</div>';
+      popupHtml += '<div style="font-size:12px;margin-bottom:3px"><b>状況:</b> ' + escapeHtml(sos.type || '-') + '</div>';
+      popupHtml += '<div style="font-size:12px;margin-bottom:3px"><b>位置:</b> 約100m単位</div>';
+      popupHtml += '<div style="font-size:11px;color:#888;margin-bottom:6px">⏱ ' + elapsedText + '</div>';
+
+      if (id === sosUid && sos.uid === sosUid) {
+        popupHtml += '<button class="sos-popup-resolve" onclick="resolveSos(\'' + id + '\')">✅ 解決済み（削除）</button>';
+      }
+
+      popupHtml += '<div style="font-size:10px;color:#aaa;margin-top:6px">※正確な位置と自由記述メモは公開しません</div>';
+      popupHtml += '</div>';
+      return popupHtml;
+    }
 
     try {
       firebase.initializeApp(firebaseConfig);
       sosDb = firebase.database();
       sosAuth = firebase.auth();
-      sosAuth.signInAnonymously().then(function(cred) {
-        sosUid = cred.user.uid;
-      }).catch(function(e) {
-        console.warn('匿名認証失敗:', e);
+      sosAuth.onAuthStateChanged(function(user) {
+        sosUid = user ? user.uid : null;
+        mySosId = sosUid;
+        if (sosUid) startSosListener();
       });
+      if (sosAuth.currentUser) {
+        sosUid = sosAuth.currentUser.uid;
+        mySosId = sosUid;
+        startSosListener();
+      } else {
+        sosAuth.signInAnonymously().catch(function(e) {
+          console.warn('匿名認証失敗:', e);
+        });
+      }
     } catch (e) {
       console.warn('Firebase初期化失敗:', e);
     }
 
     // SOSデータのリアルタイム監視
     function startSosListener() {
-      if (!sosDb) return;
+      if (!sosDb || !sosUid || sosListenerStarted) return;
+      sosListenerStarted = true;
       const sosRef = sosDb.ref('sos');
       sosRef.on('value', function(snapshot) {
         const data = snapshot.val() || {};
         const now = Date.now();
-        const TTL = 30 * 60 * 1000; // 30分
 
         // 現在表示中のIDセット
         const activeIds = new Set();
 
         Object.entries(data).forEach(function([id, sos]) {
-          // 30分超過はスキップ
-          if (now - sos.created_at > TTL) return;
+          if (!sos || typeof sos !== 'object') return;
+          const createdAt = Number(sos.created_at || 0);
+          const expiresAt = Number(sos.expires_at || 0);
+          if (!Number.isFinite(createdAt) || !Number.isFinite(expiresAt)) return;
+          if (!Number.isFinite(Number(sos.lat)) || !Number.isFinite(Number(sos.lng))) return;
+          if (expiresAt <= now) return;
           activeIds.add(id);
 
           if (sosMarkers[id]) {
-            // 既存マーカー - 位置更新は不要（固定）
+            sosMarkers[id].data = sos;
+            sosMarkers[id].marker.setPopupContent(buildSosPopupHtml(id, sos, now));
             return;
           }
 
@@ -4166,30 +4214,9 @@
             iconAnchor: [10, 10],
           });
 
-          const marker = L.marker([sos.lat, sos.lng], { icon: icon, zIndexOffset: 1000 }).addTo(map);
+          const marker = L.marker([Number(sos.lat), Number(sos.lng)], { icon: icon, zIndexOffset: 1000 }).addTo(map);
 
-          // 経過時間の計算
-          const elapsed = Math.floor((now - sos.created_at) / 60000);
-          const elapsedText = elapsed < 1 ? '1分未満' : elapsed + '分前';
-
-          let popupHtml = '<div style="min-width:160px">';
-          popupHtml += '<div style="font-size:14px;font-weight:bold;color:#dc2626;margin-bottom:6px">🆘 SOS</div>';
-          popupHtml += '<div style="font-size:12px;margin-bottom:3px"><b>車種:</b> ' + escapeHtml(sos.vehicle || '-') + '</div>';
-          popupHtml += '<div style="font-size:12px;margin-bottom:3px"><b>状況:</b> ' + escapeHtml(sos.type || '-') + '</div>';
-          if (sos.note) {
-            popupHtml += '<div style="font-size:12px;margin-bottom:3px"><b>補足:</b> ' + escapeHtml(sos.note) + '</div>';
-          }
-          popupHtml += '<div style="font-size:11px;color:#888;margin-bottom:6px">⏱ ' + elapsedText + '</div>';
-
-          // 自分のSOSなら「解決済み」ボタンを表示
-          if (sos.uid && sos.uid === sosUid) {
-            popupHtml += '<button class="sos-popup-resolve" onclick="resolveSos(\'' + id + '\')">✅ 解決済み（削除）</button>';
-          }
-
-          popupHtml += '<div style="font-size:10px;color:#aaa;margin-top:6px">※30分で自動消滅します</div>';
-          popupHtml += '</div>';
-
-          marker.bindPopup(popupHtml);
+          marker.bindPopup(buildSosPopupHtml(id, sos, now));
           sosMarkers[id] = { marker: marker, data: sos };
         });
 
@@ -4200,6 +4227,8 @@
             delete sosMarkers[id];
           }
         });
+      }, function(err) {
+        console.warn('SOS読取失敗:', err);
       });
     }
 
@@ -4208,22 +4237,7 @@
       if (!sosMarkers[id]) return;
       const sos = sosMarkers[id].data;
       const now = Date.now();
-      const elapsed = Math.floor((now - sos.created_at) / 60000);
-      const elapsedText = elapsed < 1 ? '1分未満' : elapsed + '分前';
-
-      let popupHtml = '<div style="min-width:160px">';
-      popupHtml += '<div style="font-size:14px;font-weight:bold;color:#dc2626;margin-bottom:6px">🆘 SOS</div>';
-      popupHtml += '<div style="font-size:12px;margin-bottom:3px"><b>車種:</b> ' + escapeHtml(sos.vehicle || '-') + '</div>';
-      popupHtml += '<div style="font-size:12px;margin-bottom:3px"><b>状況:</b> ' + escapeHtml(sos.type || '-') + '</div>';
-      if (sos.note) {
-        popupHtml += '<div style="font-size:12px;margin-bottom:3px"><b>補足:</b> ' + escapeHtml(sos.note) + '</div>';
-      }
-      popupHtml += '<div style="font-size:11px;color:#888;margin-bottom:6px">⏱ ' + elapsedText + '</div>';
-      popupHtml += '<button class="sos-popup-resolve" onclick="resolveSos(\'' + id + '\')">✅ 解決済み（削除）</button>';
-      popupHtml += '<div style="font-size:10px;color:#aaa;margin-top:6px">※30分で自動消滅します</div>';
-      popupHtml += '</div>';
-
-      sosMarkers[id].marker.setPopupContent(popupHtml);
+      sosMarkers[id].marker.setPopupContent(buildSosPopupHtml(id, sos, now));
     }
 
     // SOSモーダル制御
@@ -4257,7 +4271,7 @@
         function(pos) {
           sosLat = pos.coords.latitude;
           sosLng = pos.coords.longitude;
-          statusEl.textContent = '✅ 位置情報を取得しました';
+          statusEl.textContent = '✅ 位置情報を取得しました（公開時は約100m単位に丸めます）';
           statusEl.className = 'sos-location-status ok';
           submitBtn.disabled = false;
         },
@@ -4284,35 +4298,40 @@
 
       const vehicle = document.getElementById('sos-vehicle').value;
       const situation = document.getElementById('sos-situation').value;
-      const note = document.getElementById('sos-note').value.trim().slice(0, 200);
+      if (!SOS_ALLOWED_VEHICLES.includes(vehicle) || !SOS_ALLOWED_TYPES.includes(situation)) {
+        alert('送信内容を確認してください。');
+        return;
+      }
 
       const submitBtn = document.getElementById('sos-submit-btn');
       submitBtn.disabled = true;
       submitBtn.textContent = '送信中...';
+      const createdAt = Date.now();
+      const approxLat = roundSosCoordinate(sosLat);
+      const approxLng = roundSosCoordinate(sosLng);
 
       const sosData = {
-        lat: sosLat,
-        lng: sosLng,
+        lat: approxLat,
+        lng: approxLng,
         vehicle: vehicle,
         type: situation,
-        note: note || null,
-        created_at: firebase.database.ServerValue.TIMESTAMP,
+        created_at: createdAt,
+        expires_at: createdAt + SOS_TTL_MS,
         uid: sosUid,
       };
 
-      const newRef = sosDb.ref('sos').push();
-      mySosId = newRef.key;
+      const newRef = sosDb.ref('sos/' + sosUid);
+      mySosId = sosUid;
 
       newRef.set(sosData)
         .then(function() {
           closeSosModal();
           submitBtn.disabled = false;
           submitBtn.textContent = 'SOSを送信';
-          document.getElementById('sos-note').value = '';
 
           // 送信後にマップビューに切り替え、SOSの位置に移動
           switchView('map');
-          map.setView([sosLat, sosLng], 15);
+          map.setView([approxLat, approxLng], 15);
 
           // 少し遅延してからポップアップを更新（リアルタイム同期を待つ）
           setTimeout(function() {
@@ -4333,7 +4352,7 @@
     window.resolveSos = function(id) {
       if (!sosDb || !sosUid) return;
       var entry = sosMarkers[id];
-      if (!entry || entry.data.uid !== sosUid) {
+      if (!entry || id !== sosUid || entry.data.uid !== sosUid) {
         alert('自分の投稿のみ削除できます。');
         return;
       }
@@ -4347,9 +4366,6 @@
           alert('削除に失敗しました。');
         });
     };
-
-    // SOSリスナー開始
-    startSosListener();
 
     // Service Worker登録
     if ('serviceWorker' in navigator) {
