@@ -1,0 +1,57 @@
+name: 子育てイベント監視
+
+on:
+  schedule:
+    # 毎週月曜 09:00 JST。奇数ISO週だけ本実行して隔週監視にする
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh_kosodate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v6
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: 実行タイミング判定
+        id: cadence
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          week_number="$(date -u +%V)"
+          if [ $((10#$week_number % 2)) -eq 1 ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 子育てイベントJSON生成
+        if: steps.cadence.outputs.should_run == 'true'
+        run: python scripts/build_kosodate_events.py --monitor-interval-days 14 --recent-days 30
+
+      - name: 変更確認
+        if: steps.cadence.outputs.should_run == 'true'
+        id: check_changes
+        run: |
+          git diff --quiet || echo "changes=true" >> "$GITHUB_OUTPUT"
+
+      - name: 変更をコミット・プッシュ
+        if: steps.cadence.outputs.should_run == 'true' && steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/data/kosodate_events.json
+          git commit -m "data: $(date -u '+%Y-%m-%d') 子育てイベント監視を更新"
+          git push

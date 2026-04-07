@@ -1645,6 +1645,7 @@
     let kosodateEvents = []; // 子育て・学びイベント
     let kidsEventMarkers = {}; // 子育てイベントマーカー
     let kosodateWindow = null; // イベント抽出期間
+    let kosodateMonitoring = null; // 子育てページ監視メタ
     let fmsCounts = {};      // FMS関心度（工区/路線名→レベル）
     let fmsRisk = {};        // FMSリスクデータ（工区名→{total, stuck_total, ...}）
     let prevSummary = null;  // 前日サマリー
@@ -1784,6 +1785,20 @@
       let html = '<div style="background:#fff;border:1px solid #fbcfe8;border-radius:10px;padding:10px 12px;margin-bottom:10px">';
       html += '<h3 style="font-size:14px;color:#be185d;margin-bottom:6px">子育て・子どもイベント一覧</h3>';
       html += '<div style="font-size:11px;color:#6b7280;margin-bottom:8px">ピンを押すか、一覧から地図上へ移動できます（' + count + '件）。</div>';
+      if (kosodateMonitoring && (kosodateMonitoring.checked_at || kosodateMonitoring.next_check_at || kosodateMonitoring.note)) {
+        const monitorStatus = kosodateMonitoring.status || 'ok';
+        const monitorBg = monitorStatus === 'attention' ? '#fff7ed' : '#f0fdf4';
+        const monitorBorder = monitorStatus === 'attention' ? '#fdba74' : '#86efac';
+        const monitorText = monitorStatus === 'attention' ? '#9a3412' : '#166534';
+        const checkedAt = escapeHtml(kosodateMonitoring.checked_at || '-');
+        const nextCheckAt = escapeHtml(kosodateMonitoring.next_check_at || '-');
+        html += '<div style="font-size:10px;color:' + monitorText + ';background:' + monitorBg + ';border:1px solid ' + monitorBorder + ';border-radius:8px;padding:7px 8px;margin-bottom:8px">';
+        html += '最終確認: ' + checkedAt + ' / 次回監視目安: ' + nextCheckAt;
+        if (kosodateMonitoring.note) {
+          html += '<div style="margin-top:4px;line-height:1.5">' + escapeHtml(kosodateMonitoring.note) + '</div>';
+        }
+        html += '</div>';
+      }
       if (kosodateWindow && kosodateWindow.start_date && kosodateWindow.end_date) {
         html += '<div style="font-size:10px;color:#6b7280;margin-bottom:8px">掲載期間: ' + kosodateWindow.start_date + ' 〜 ' + kosodateWindow.end_date + '</div>';
       }
@@ -3502,8 +3517,14 @@
         .then(data => {
           kosodateEvents = data.items || [];
           kosodateWindow = data.window || null;
+          kosodateMonitoring = data.monitoring || (data.updated_at ? { checked_at: data.updated_at } : null);
         })
-        .catch(err => { console.warn('子育てイベント読み込み失敗:', err); kosodateEvents = []; kosodateWindow = null; });
+        .catch(err => {
+          console.warn('子育てイベント読み込み失敗:', err);
+          kosodateEvents = [];
+          kosodateWindow = null;
+          kosodateMonitoring = null;
+        });
     }
 
     // スパネ度読み込み
