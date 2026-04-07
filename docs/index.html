@@ -1298,7 +1298,6 @@
       <div class="nav-menu" id="nav-menu">
         <a href="#" onclick="navTo('hub',event)">&#10052; トップ</a>
         <a href="#" onclick="navTo('map',event)">&#x1F5FA; 除排雪マップ</a>
-        <a href="#" onclick="navTo('sos',event)">&#x1F198; SOS通報</a>
         <a href="#" onclick="navTo('navi',event)">&#x1F6E3; 安全ルート</a>
         <a href="#" onclick="navTo('dashboard',event)">&#x1F4CA; ダッシュボード</a>
       </div>
@@ -1375,7 +1374,7 @@
         <li><strong>スタックしやすい場所を確認する</strong> — 「市民報告」セクションに、直近7日間の通行リスク（スタック・走行注意など）が工区ごとにまとまっています。工区名をタップすると地図上で場所を確認できます。</li>
         <li><strong>雪捨て場を探す</strong> — 地図上の緑色の丸印が雪捨て場です。タップすると名前・受入時間が表示されます。</li>
         <li><strong>バスの運休を確認する</strong> — 画面下部の「市営バス運行状況」から確認できます。「地図に表示」ボタンで運休区間を地図上に表示します。</li>
-        <li><strong>スタックSOSを出す</strong> — 右下の赤いSOSボタンから、スタックなどの状況を地図上に共有できます。30分で自動的に消えます。緊急時はまず110/119に電話してください。</li>
+        <li><strong>スタックSOS</strong> — 冬季外のため現在は停止中です。緊急時は110/119をご利用ください。</li>
       </ul>
 
       <h3>4. 情報の正確性</h3>
@@ -1416,11 +1415,9 @@
 
       <h3>9. SOS機能について</h3>
       <ul>
-        <li>SOS機能は、スタック等の状況を地図上に共有する機能です。救助のマッチングや通知は行いません。</li>
+        <li>SOS機能は冬季外のため現在停止中です。再開時期は運用状況に応じて判断します。</li>
         <li>緊急時は必ず110（警察）または119（消防）に電話してください。</li>
-        <li>SOS情報は30分で自動的に消滅し、公開位置は約100m単位に丸めて表示されます。</li>
-        <li>個人を特定する情報（名前・電話番号等）や自由記述メモは送信されません。</li>
-        <li>本機能の利用により生じたいかなる損害についても、運営者は一切の責任を負いません。</li>
+        <li>停止中はSOSの送信・表示は行われません。</li>
       </ul>
 
       <h3>10. お問い合わせ</h3>
@@ -1681,6 +1678,7 @@
     const FEATURE_VIDEO_URL = ''; // 例: 'https://www.youtube.com/embed/xxxxxxxxxxx'
 
     // ビュー管理
+    const SOS_ENABLED = false;
     let currentView = 'hub';
     let dataReady = false;
     let activePurposeKey = null;
@@ -1911,8 +1909,13 @@
 
     window.switchView = function(view) {
       if (view === 'sos') {
-        openSosWarning();
-        return;
+        if (!SOS_ENABLED) {
+          alert('SOS機能は冬季外のため現在停止中です。緊急時は110/119をご利用ください。');
+          view = 'map';
+        } else {
+          openSosWarning();
+          return;
+        }
       }
       if (view !== 'map') hideNaviPickBanner();
 
@@ -1940,7 +1943,7 @@
         if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
       } else if (view === 'map') {
         document.getElementById('main').style.display = 'flex';
-        document.getElementById('sos-btn').style.display = 'flex';
+        document.getElementById('sos-btn').style.display = SOS_ENABLED ? 'flex' : 'none';
         backBtn.style.display = 'block';
         titleEl.textContent = mapHeaderTitle;
         syncMapHeader();
@@ -4180,21 +4183,23 @@
 
     try {
       firebase.initializeApp(firebaseConfig);
-      sosDb = firebase.database();
-      sosAuth = firebase.auth();
-      sosAuth.onAuthStateChanged(function(user) {
-        sosUid = user ? user.uid : null;
-        mySosId = sosUid;
-        if (sosUid) startSosListener();
-      });
-      if (sosAuth.currentUser) {
-        sosUid = sosAuth.currentUser.uid;
-        mySosId = sosUid;
-        startSosListener();
-      } else {
-        sosAuth.signInAnonymously().catch(function(e) {
-          console.warn('匿名認証失敗:', e);
+      if (SOS_ENABLED) {
+        sosDb = firebase.database();
+        sosAuth = firebase.auth();
+        sosAuth.onAuthStateChanged(function(user) {
+          sosUid = user ? user.uid : null;
+          mySosId = sosUid;
+          if (sosUid) startSosListener();
         });
+        if (sosAuth.currentUser) {
+          sosUid = sosAuth.currentUser.uid;
+          mySosId = sosUid;
+          startSosListener();
+        } else {
+          sosAuth.signInAnonymously().catch(function(e) {
+            console.warn('匿名認証失敗:', e);
+          });
+        }
       }
     } catch (e) {
       console.warn('Firebase初期化失敗:', e);
@@ -4266,10 +4271,15 @@
     let sosLng = null;
 
     window.openSosWarning = function() {
+      if (!SOS_ENABLED) {
+        alert('SOS機能は冬季外のため現在停止中です。');
+        return;
+      }
       document.getElementById('sos-warning-modal').classList.add('active');
     };
 
     window.showSosForm = function() {
+      if (!SOS_ENABLED) return;
       document.getElementById('sos-warning-modal').classList.remove('active');
       document.getElementById('sos-form-modal').classList.add('active');
 
@@ -4311,6 +4321,7 @@
     };
 
     window.submitSos = function() {
+      if (!SOS_ENABLED) return;
       if (!sosDb || sosLat === null || sosLng === null) return;
       if (!sosUid) {
         alert('認証の準備中です。少し待ってから再度お試しください。');
@@ -4371,6 +4382,7 @@
     };
 
     window.resolveSos = function(id) {
+      if (!SOS_ENABLED) return;
       if (!sosDb || !sosUid) return;
       var entry = sosMarkers[id];
       if (!entry || id !== sosUid || entry.data.uid !== sosUid) {
