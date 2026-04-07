@@ -1,6 +1,12 @@
 name: 子育てイベント監視
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/refresh_kosodate.yml'
+      - 'scripts/build_kosodate_events.py'
+      - 'scripts/kosodate_events_master.json'
   schedule:
     # 毎週月曜 09:00 JST。奇数ISO週だけ本実行して隔週監視にする
     - cron: '0 0 * * 1'
