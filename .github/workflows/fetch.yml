@@ -20,7 +20,7 @@ jobs:
       # 来シーズン再開時は以下の if: false を削除する
       - name: FMSデータリポジトリをチェックアウト
         if: false
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: 98wrvgxrn9-ctrl/fms-data
           path: fms-data

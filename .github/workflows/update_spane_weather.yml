@@ -9,16 +9,20 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: weather-data-update
+  cancel-in-progress: false
+
 jobs:
   update_spane_weather:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -38,5 +42,5 @@ jobs:
           git add docs/data/current_weather.json docs/data/spane_index.json data/processed/fms/current_weather.json
           git diff --staged --quiet && exit 0
           git commit -m "Update current weather and spane index - $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          git pull --rebase origin main
+          git pull --rebase --autostash origin main
           git push
