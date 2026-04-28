@@ -1,5 +1,5 @@
 {
-  "generated": "2026-04-28 15:57",
+  "generated": "2026-04-28 17:51",
   "location": {
     "name": "青森市",
     "lat": 40.8246,
@@ -11,7 +11,7 @@
   },
   "current": {
     "temperature_c": 5.3,
-    "observed_at": "2026-04-29T00:45",
-    "weather_code": 0
+    "observed_at": "2026-04-29T02:45",
+    "weather_code": 1
   }
 }
