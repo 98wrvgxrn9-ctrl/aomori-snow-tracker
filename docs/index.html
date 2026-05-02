@@ -3485,7 +3485,7 @@
 
       if (busStatusData.notes && busStatusData.notes.length > 0) {
         html += '<div class="bus-list"><div class="bus-list-title">備考</div>';
-        busStatusData.notes.forEach(n => { html += `<div class="bus-note">・${n}</div>`; });
+        busStatusData.notes.forEach(n => { html += `<div class="bus-note">・${escapeHtml(n)}</div>`; });
         html += '</div>';
       }
       if (busStatusData.contacts && busStatusData.contacts.length > 0) {
