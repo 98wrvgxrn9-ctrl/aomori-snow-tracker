@@ -16,8 +16,11 @@ from google.oauth2.service_account import Credentials
 import requests
 
 # Google Sheets設定
-SPREADSHEET_ID = "1Wd_2gVBruM-fwAZB3KkRxIEn1bOSVph0VFJfPwI2UH8"
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+SPREADSHEET_ID = os.environ.get(
+    "SPREADSHEET_ID",
+    "1Wd_2gVBruM-fwAZB3KkRxIEn1bOSVph0VFJfPwI2UH8",
+)
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 
 # Google マイマップのKMLエクスポートURL
 MAPS = {

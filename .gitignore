@@ -7,3 +7,8 @@ fms-data/
 x_*
 logs/
 docs/構想メモ.md
+__pycache__/
+*.pyc
+.venv/
+venv/
+tmp/
