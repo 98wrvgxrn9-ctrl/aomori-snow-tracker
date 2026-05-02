@@ -467,8 +467,9 @@ def save_to_sheets(data):
         print("GOOGLE_CREDENTIALS_JSON環境変数が設定されていません。スプレッドシート保存をスキップ。")
         return None
 
+    write_scopes = ["https://www.googleapis.com/auth/spreadsheets"]
     creds_data = json.loads(creds_json)
-    creds = Credentials.from_service_account_info(creds_data, scopes=SCOPES)
+    creds = Credentials.from_service_account_info(creds_data, scopes=write_scopes)
     client = gspread.authorize(creds)
 
     spreadsheet = client.open_by_key(SPREADSHEET_ID)
