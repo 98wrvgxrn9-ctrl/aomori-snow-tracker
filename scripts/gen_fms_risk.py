@@ -12,11 +12,16 @@ from email.utils import parsedate_to_datetime
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
+
+def require_env(name):
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(f"{name} environment variable is required")
+    return value
+
+
 # Google Spreadsheet (FMS通知記録)
-FMS_SPREADSHEET_ID = os.environ.get(
-    "FMS_SPREADSHEET_ID",
-    "148iiDmslhzgn65nQCZG9Lk3Dobr7pEzkjBqcIK92aq0",
-)
+FMS_SPREADSHEET_ID = require_env("FMS_SPREADSHEET_ID")
 FMS_CSV_CANDIDATES = [
     os.environ.get("FMS_CSV_PATH", ""),
     os.path.join(SCRIPT_DIR, "..", "data", "processed", "fms",

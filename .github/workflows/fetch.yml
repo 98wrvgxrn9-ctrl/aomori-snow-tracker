@@ -39,12 +39,14 @@ jobs:
         if: false
         env:
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          SPREADSHEET_ID: ${{ vars.SPREADSHEET_ID }}
         run: python scripts/fetch_kml.py
 
       - name: FMSリスク集計
         if: false
         env:
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          FMS_SPREADSHEET_ID: ${{ vars.FMS_SPREADSHEET_ID }}
         run: python scripts/gen_fms_risk.py
 
       - name: 前日サマリー生成
