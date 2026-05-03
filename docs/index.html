@@ -3288,7 +3288,7 @@
         L.geoJSON(feat, {
           style: { color: color, fillColor: color, fillOpacity: 0.7, weight: 1, opacity: 0.8 },
         })
-        .bindTooltip(name + ' スパネ度: ' + zone.spane_index + '（' + zone.level + '）<br>除雪から' + zone.days_since_clearance + '日', { sticky: true })
+        .bindTooltip(escapeHtml(name) + ' スパネ度: ' + zone.spane_index + '（' + zone.level + '）<br>除雪から' + zone.days_since_clearance + '日', { sticky: true })
         .addTo(spaneLayer);
       });
     }
@@ -3544,7 +3544,7 @@
           style: styleFeature,
           onEachFeature: function(feat, lyr) {
             // ツールチップ（ホバーで工区名表示）
-            lyr.bindTooltip(feat.properties['名前'], {
+            lyr.bindTooltip(escapeHtml(feat.properties['名前']), {
               sticky: true,
               direction: 'top',
               className: 'area-tooltip',
@@ -3567,7 +3567,7 @@
           const meta = areasMeta[feature.properties['名前']];
           if (meta && meta.centroid) {
             const areaName = feature.properties['名前'];
-            let labelHtml = areaName;
+            let labelHtml = escapeHtml(areaName);
             const risk = fmsRisk[areaName];
             if (risk && risk.stuck_total > 0) {
               labelHtml += `<span style="display:inline-block;background:#c0392b;color:#fff;font-size:8px;font-weight:bold;border-radius:6px;padding:0 3px;margin-left:2px;vertical-align:top;text-shadow:none;line-height:1.4">⚠${risk.stuck_total}</span>`;
@@ -3611,7 +3611,7 @@
         if (site.hours) popupHtml += `<br>受入時間: ${escapeHtml(site.hours)}`;
         if (site.notes) popupHtml += `<br>${escapeHtml(site.notes)}`;
         marker.bindPopup(popupHtml);
-        marker.bindTooltip(site.name, { direction: 'top', className: 'dump-tooltip' });
+        marker.bindTooltip(escapeHtml(site.name), { direction: 'top', className: 'dump-tooltip' });
         dumpSiteLayer.addLayer(marker);
       });
       if (layerVisibility.dump) dumpSiteLayer.addTo(map);
@@ -3639,7 +3639,7 @@
         if (props.note) popupHtml += `<br>${escapeHtml(props.note)}`;
         popupHtml += `<br><span style="font-size:10px;color:#aaa">出典: ${escapeHtml(props.source)}</span>`;
         marker.bindPopup(popupHtml);
-        marker.bindTooltip(props.name, { direction: 'top', className: 'ryusetsu-tooltip' });
+        marker.bindTooltip(escapeHtml(props.name), { direction: 'top', className: 'ryusetsu-tooltip' });
         ryusetsukoLayer.addLayer(marker);
       });
       if (layerVisibility.ryusetsuko) ryusetsukoLayer.addTo(map);
@@ -3697,7 +3697,7 @@
           }
           popupHtml += `</div>`;
           busLine.bindPopup(popupHtml);
-          busLine.bindTooltip(`❌ ${props.name}（${props.status}）`, { sticky: true, direction: 'top' });
+          busLine.bindTooltip(`❌ ${escapeHtml(props.name)}（${escapeHtml(props.status)}）`, { sticky: true, direction: 'top' });
 
           // 停留所❌マーカー
           if (props.stops) {
@@ -3709,7 +3709,7 @@
                 iconAnchor: [9, 9],
               });
               const m = L.marker([stop.lat, stop.lng], { icon: icon });
-              m.bindTooltip(`❌ ${stop.name}（運休中）`, { direction: 'top', className: 'dump-tooltip' });
+              m.bindTooltip(`❌ ${escapeHtml(stop.name)}（運休中）`, { direction: 'top', className: 'dump-tooltip' });
               busLayer.addLayer(m);
             });
           }
@@ -3784,7 +3784,7 @@
           `</div>`,
         ].join('');
         marker.bindPopup(popupHtml);
-        marker.bindTooltip(ev.title || '子育てイベント', { direction: 'top', className: 'dump-tooltip' });
+        marker.bindTooltip(escapeHtml(ev.title) || '子育てイベント', { direction: 'top', className: 'dump-tooltip' });
         if (ev.category === 'private_general') {
           kidsPrivateLayer.addLayer(marker);
         } else {
