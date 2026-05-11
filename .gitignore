@@ -12,3 +12,6 @@ __pycache__/
 .venv/
 venv/
 tmp/
+data/koku_*.json
+data/rosen_*.json
+data/2026*.json

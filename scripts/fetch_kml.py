@@ -15,11 +15,16 @@ import gspread
 from google.oauth2.service_account import Credentials
 import requests
 
+
+def require_env(name):
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(f"{name} environment variable is required")
+    return value
+
+
 # Google Sheets設定
-SPREADSHEET_ID = os.environ.get(
-    "SPREADSHEET_ID",
-    "1Wd_2gVBruM-fwAZB3KkRxIEn1bOSVph0VFJfPwI2UH8",
-)
+SPREADSHEET_ID = require_env("SPREADSHEET_ID")
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 
 # Google マイマップのKMLエクスポートURL
