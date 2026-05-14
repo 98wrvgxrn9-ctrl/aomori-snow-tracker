@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-14 08:07",
+  "generated": "2026-05-14 10:42",
   "location": {
     "name": "青森市",
     "lat": 40.8246,
@@ -10,8 +10,8 @@
     "url": "https://api.open-meteo.com/v1/forecast"
   },
   "current": {
-    "temperature_c": 16.8,
-    "observed_at": "2026-05-14T17:00",
+    "temperature_c": 12.7,
+    "observed_at": "2026-05-14T19:30",
     "weather_code": 0
   }
 }
