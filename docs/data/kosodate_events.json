@@ -1,8 +1,8 @@
 {
-  "updated_at": "2026-06-15",
+  "updated_at": "2026-06-29",
   "monitoring": {
-    "checked_at": "2026-06-15",
-    "next_check_at": "2026-06-29",
+    "checked_at": "2026-06-29",
+    "next_check_at": "2026-07-13",
     "check_interval_days": 14,
     "recent_days": 30,
     "recent_non_recurring_count": 0,
