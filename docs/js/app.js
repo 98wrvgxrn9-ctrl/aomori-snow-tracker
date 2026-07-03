@@ -1421,7 +1421,8 @@
 
       // active表示更新
       document.querySelectorAll('.summary-item.active').forEach(el => el.classList.remove('active'));
-      event.currentTarget.classList.add('active');
+      const activeCard = document.querySelector('.summary-item[data-type="' + type + '"][data-key="' + status + '"]');
+      if (activeCard) activeCard.classList.add('active');
 
       // 対象フィーチャー取得
       const features = type === 'koku' ? kokuFeaturesGlobal : rosenFeaturesGlobal;
