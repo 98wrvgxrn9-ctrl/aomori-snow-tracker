@@ -6,6 +6,8 @@ import os
 import xml.etree.ElementTree as ET
 import urllib.request
 
+from sanitize_text import clean_text
+
 # 除雪完了KML（リアルタイム更新）
 COMPLETE_KML_URL = "https://www.aomori-josetsu.jp/josetsugps/fileview/kmlfile_complete_from_subscriber_id/1/"
 # 国道路線KML（路線の位置）
@@ -94,8 +96,8 @@ def parse_complete_kml(kml_text):
                     "coordinates": coords,
                 },
                 "properties": {
-                    "id": name,
-                    "status": status,
+                    "id": clean_text(name, max_len=100),
+                    "status": clean_text(status, max_len=100),
                     "color": color,
                     "source": "国交省除雪管理システム",
                 },

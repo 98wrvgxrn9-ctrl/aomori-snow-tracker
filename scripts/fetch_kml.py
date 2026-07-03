@@ -15,6 +15,8 @@ import gspread
 from google.oauth2.service_account import Credentials
 import requests
 
+from sanitize_text import clean_record
+
 
 def require_env(name):
     value = os.environ.get(name)
@@ -223,7 +225,7 @@ def parse_kml(kml_content, name_field="name"):
                     row["_geometry"] = geometry
                 results.append(row)
 
-    return results
+    return [clean_record(row, skip_keys=("_geometry",)) for row in results]
 
 
 def save_to_csv(data, filepath, col_name="工区"):
