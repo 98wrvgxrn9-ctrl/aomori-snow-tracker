@@ -1490,14 +1490,15 @@
     function renderKidsEventRows(events) {
       let html = '';
       events.forEach(function(ev) {
-        const title = ev.title || '子育てイベント';
-        const month = ev.month || '未設定';
-        const time = ev.time || '未設定';
-        const summary = ev.summary || '';
+        const title = escapeHtml(ev.title || '子育てイベント');
+        const month = escapeHtml(ev.month || '未設定');
+        const time = escapeHtml(ev.time || '未設定');
+        const summary = escapeHtml(ev.summary || '');
         const catLabel = kidsCategoryLabel(ev.category);
         const catColor = kidsCategoryColor(ev.category);
         const id = ev.id || '';
-        const safeId = id.replace(/'/g, "\\'");
+        const safeId = escapeHtml(id.replace(/[\\']/g, '\\$&'));
+        const safeUrl = (ev.url && /^https?:\/\//.test(ev.url)) ? ev.url : '#';
         html += '<div style="border-top:1px solid #fce7f3;padding:8px 0">';
         html += '<div style="display:flex;justify-content:space-between;gap:6px;align-items:flex-start">';
         html += '<div style="font-size:13px;font-weight:bold;color:#9d174d;line-height:1.4">' + title + '</div>';
@@ -1507,7 +1508,7 @@
         if (summary) html += '<div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.4">' + summary + '</div>';
         html += '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">';
         html += '<button type="button" onclick="focusKidsEvent(\'' + safeId + '\')" style="background:#fdf2f8;color:#9d174d;border:1px solid #f9a8d4;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer">地図で見る</button>';
-        html += '<a href="' + (ev.url || '#') + '" target="_blank" rel="noopener" style="background:#be185d;color:#fff;text-decoration:none;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:bold">申込/詳細</a>';
+        html += '<a href="' + escapeHtml(safeUrl) + '" target="_blank" rel="noopener" style="background:#be185d;color:#fff;text-decoration:none;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:bold">申込/詳細</a>';
         html += '</div></div>';
       });
       return html;
@@ -1539,7 +1540,7 @@
         html += '</div>';
       }
       if (kosodateWindow && kosodateWindow.start_date && kosodateWindow.end_date) {
-        html += '<div style="font-size:10px;color:#6b7280;margin-bottom:8px">掲載期間: ' + kosodateWindow.start_date + ' 〜 ' + kosodateWindow.end_date + '</div>';
+        html += '<div style="font-size:10px;color:#6b7280;margin-bottom:8px">掲載期間: ' + escapeHtml(kosodateWindow.start_date) + ' 〜 ' + escapeHtml(kosodateWindow.end_date) + '</div>';
       }
       html += '<div style="border-top:1px solid #fce7f3;margin-top:6px">';
       html += '<button type="button" onclick="toggleKidsAccordion(\'recent\')" style="width:100%;display:flex;justify-content:space-between;align-items:center;background:#eff6ff;border:none;padding:8px 10px;color:#1d4ed8;font-size:12px;font-weight:bold;cursor:pointer">';
@@ -2132,7 +2133,7 @@
         var label = getRiskLabel(w);
         html += '<div class="navi-route-step">';
         html += '<div class="step-dot" style="background:' + color + '"></div>';
-        html += '<span>' + (i === 0 ? '出発: ' : i === result.path.length - 1 ? '目的地: ' : '') + area + '</span>';
+        html += '<span>' + (i === 0 ? '出発: ' : i === result.path.length - 1 ? '目的地: ' : '') + escapeHtml(area) + '</span>';
         html += '<span class="step-risk" style="background:' + color + '">' + label + '</span>';
         html += '</div>';
       });
@@ -2340,7 +2341,7 @@
       const spaneZone = spaneData && spaneData.zones && spaneData.zones[props['名前']];
       if (spaneZone) {
         const spaneCol = spaneZone.spane_index >= 70 ? '#795548' : spaneZone.spane_index >= 40 ? '#e67e22' : spaneZone.spane_index >= 15 ? '#f39c12' : '#3498db';
-        html += `<div class="detail-row"><span class="label">スパネ度</span><span class="value" style="color:${spaneCol};font-weight:bold">${spaneZone.spane_index} / 100（${spaneZone.level}）</span></div>`;
+        html += `<div class="detail-row"><span class="label">スパネ度</span><span class="value" style="color:${spaneCol};font-weight:bold">${escapeHtml(String(spaneZone.spane_index))} / 100（${escapeHtml(String(spaneZone.level))}）</span></div>`;
       }
 
       // 空間情報（メタデータ）
@@ -3288,7 +3289,7 @@
         L.geoJSON(feat, {
           style: { color: color, fillColor: color, fillOpacity: 0.7, weight: 1, opacity: 0.8 },
         })
-        .bindTooltip(escapeHtml(name) + ' スパネ度: ' + zone.spane_index + '（' + zone.level + '）<br>除雪から' + zone.days_since_clearance + '日', { sticky: true })
+        .bindTooltip(escapeHtml(name) + ' スパネ度: ' + escapeHtml(String(zone.spane_index)) + '（' + escapeHtml(String(zone.level)) + '）<br>除雪から' + escapeHtml(String(zone.days_since_clearance)) + '日', { sticky: true })
         .addTo(spaneLayer);
       });
     }
@@ -3304,15 +3305,15 @@
       const top = spaneData.top_zone;
       const color = spaneColor(base.city_spane);
       const tempSourceLabel = base.temp_source === 'current_weather' ? '現在気温' : '日次気温';
-      const tempObserved = base.temp_observed_at ? ' / ' + base.temp_observed_at : '';
+      const tempObserved = base.temp_observed_at ? ' / ' + escapeHtml(String(base.temp_observed_at)) : '';
       spaneDiv.style.display = '';
       spaneDiv.innerHTML =
         '<div style="font-size:10px;font-weight:bold;color:#555;margin-bottom:2px">スパネ度</div>' +
-        '<div class="spane-value" style="color:' + color + '">' + base.city_spane + '</div>' +
-        '<div class="spane-sub">' + base.temp_avg_c + '℃ × 積雪' + base.snow_depth_cm + 'cm</div>' +
+        '<div class="spane-value" style="color:' + color + '">' + escapeHtml(String(base.city_spane)) + '</div>' +
+        '<div class="spane-sub">' + escapeHtml(String(base.temp_avg_c)) + '℃ × 積雪' + escapeHtml(String(base.snow_depth_cm)) + 'cm</div>' +
         '<div class="spane-sub" style="font-size:9px;color:#888">' + tempSourceLabel + tempObserved + '</div>' +
-        (top ? '<div class="spane-sub" style="margin-top:3px">最高 ' + top.spane_index + '（' + top.name + '）</div>' : '') +
-        '<div class="spane-sub" style="font-size:9px;color:#aaa">' + (spaneData.date || '') + '</div>';
+        (top ? '<div class="spane-sub" style="margin-top:3px">最高 ' + escapeHtml(String(top.spane_index)) + '（' + escapeHtml(String(top.name)) + '）</div>' : '') +
+        '<div class="spane-sub" style="font-size:9px;color:#aaa">' + escapeHtml(String(spaneData.date || '')) + '</div>';
     }
 
     // FMSリスクパネル表示
@@ -3653,7 +3654,7 @@
           style: { color: color, weight: 5, opacity: 0.8 },
         });
         lyr.bindPopup(`<b>国道区間 #${escapeHtml(String(feature.properties.id))}</b><br>状況: ${escapeHtml(status)}<br><span style="color:#888;font-size:11px">${escapeHtml(feature.properties.source)}</span>`);
-        lyr.bindTooltip(status, { sticky: true, direction: 'top' });
+        lyr.bindTooltip(escapeHtml(status), { sticky: true, direction: 'top' });
         kokudoLayer.addLayer(lyr);
       });
       if (layerVisibility.kokudo) kokudoLayer.addTo(map);
