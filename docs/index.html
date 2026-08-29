@@ -2294,23 +2294,23 @@
       const dateClass = cls === 'scheduled' ? 'confirmed' : cls === 'checking' ? 'checking' : 'adjusting';
 
       let html = '<div class="info-card">';
-      html += `<div class="area-name">${props['名前'] || '不明'}</div>`;
+      html += `<div class="area-name">${escapeHtml(props['名前'] || '不明')}</div>`;
       html += `<span class="status-badge" style="background:${cfg.bg}">${cfg.label}</span>`;
-      html += `<div class="schedule-date ${dateClass}">${dateText}</div>`;
+      html += `<div class="schedule-date ${dateClass}">${escapeHtml(dateText)}</div>`;
       if (props['指令継続']) {
-        html += `<div class="directive-duration"><span class="dur-label">指令継続中</span><span class="dur-value">${props['指令継続']}</span></div>`;
+        html += `<div class="directive-duration"><span class="dur-label">指令継続中</span><span class="dur-value">${escapeHtml(props['指令継続'])}</span></div>`;
       }
       if (props['最終除雪日']) {
-        html += `<div class="detail-row"><span class="label">最終除雪日</span><span class="value" style="font-weight:bold;color:#2c3e50">${props['最終除雪日']}</span></div>`;
+        html += `<div class="detail-row"><span class="label">最終除雪日</span><span class="value" style="font-weight:bold;color:#2c3e50">${escapeHtml(props['最終除雪日'])}</span></div>`;
       }
       if (props['指令']) {
-        html += `<div class="detail-row"><span class="label">指令</span><span class="value">${props['指令']}</span></div>`;
+        html += `<div class="detail-row"><span class="label">指令</span><span class="value">${escapeHtml(props['指令'])}</span></div>`;
       }
       if (props['更新日時']) {
-        html += `<div class="detail-row"><span class="label">更新</span><span class="value">${props['更新日時']}</span></div>`;
+        html += `<div class="detail-row"><span class="label">更新</span><span class="value">${escapeHtml(props['更新日時'])}</span></div>`;
       }
       if (props['お知らせ']) {
-        html += `<div class="detail-row"><span class="label">お知らせ</span><span class="value">${props['お知らせ']}</span></div>`;
+        html += `<div class="detail-row"><span class="label">お知らせ</span><span class="value">${escapeHtml(props['お知らせ'])}</span></div>`;
       }
 
       // FMSリスク（直近7日間の市民報告）
@@ -2347,12 +2347,12 @@
       const meta = areasMeta[props['名前']];
       if (meta) {
         if (meta.address) {
-          html += `<div class="detail-row"><span class="label">所在地</span><span class="value" style="font-size:11px">${meta.address}</span></div>`;
+          html += `<div class="detail-row"><span class="label">所在地</span><span class="value" style="font-size:11px">${escapeHtml(meta.address)}</span></div>`;
         }
         if (meta.neighbors && meta.neighbors.length > 0) {
           const shown = meta.neighbors.slice(0, 6);
           const more = meta.neighbors.length > 6 ? ` 他${meta.neighbors.length - 6}件` : '';
-          html += `<div class="detail-row"><span class="label">隣接</span><span class="value" style="font-size:11px">${shown.join(', ')}${more}</span></div>`;
+          html += `<div class="detail-row"><span class="label">隣接</span><span class="value" style="font-size:11px">${shown.map(escapeHtml).join(', ')}${more}</span></div>`;
         }
       }
 
@@ -2483,9 +2483,9 @@
       const cfg = STATUS_CONFIG[cls];
       const dateText = props['直近作業予定日'] || '未定';
       let popupHtml = `<div style="min-width:160px">`;
-      popupHtml += `<div style="font-size:13px;font-weight:bold;color:#1a3a5c;margin-bottom:4px">${props['名前'] || '不明'}</div>`;
+      popupHtml += `<div style="font-size:13px;font-weight:bold;color:#1a3a5c;margin-bottom:4px">${escapeHtml(props['名前'] || '不明')}</div>`;
       popupHtml += `<div style="margin-bottom:4px"><span style="background:${cfg.bg};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold">${cfg.label}</span></div>`;
-      popupHtml += `<div style="font-size:12px">予定日: ${dateText}</div>`;
+      popupHtml += `<div style="font-size:12px">予定日: ${escapeHtml(dateText)}</div>`;
       popupHtml += `</div>`;
       L.popup().setLatLng(e.latlng).setContent(popupHtml).openOn(map);
     }
@@ -2699,7 +2699,7 @@
           supportHtml += `<div style="font-size:11px;font-weight:bold;color:#2e7d32;margin:4px 0 2px">現在作業中 ${supportActive.length}工区</div>`;
           supportActive.forEach(({label, end}) => {
             const mm = end.getMonth()+1, dd = end.getDate();
-            supportHtml += `<div style="font-size:11px;color:#444;padding:1px 4px">▸ ${label}（〜${mm}/${dd}）</div>`;
+            supportHtml += `<div style="font-size:11px;color:#444;padding:1px 4px">▸ ${escapeHtml(label)}（〜${mm}/${dd}）</div>`;
           });
         }
         if (supportUpcoming.length > 0) {
@@ -2707,7 +2707,7 @@
           supportUpcoming.forEach(({label, start, end}) => {
             const sm = start.getMonth()+1, sd = start.getDate();
             const em = end.getMonth()+1, ed = end.getDate();
-            supportHtml += `<div style="font-size:11px;color:#444;padding:1px 4px">▸ ${label}（${sm}/${sd}〜${em}/${ed}）</div>`;
+            supportHtml += `<div style="font-size:11px;color:#444;padding:1px 4px">▸ ${escapeHtml(label)}（${sm}/${sd}〜${em}/${ed}）</div>`;
           });
         }
       }
@@ -2776,12 +2776,12 @@
         const p = f.properties;
         const cls = classifyStatus(p['ステータス']);
         const cfg = STATUS_CONFIG[cls];
-        const date = p['直近作業予定日'] || '-';
-        const lastSnow = p['最終除雪日'] || '-';
-        const duration = p['指令継続'] || '';
+        const date = escapeHtml(p['直近作業予定日'] || '-');
+        const lastSnow = escapeHtml(p['最終除雪日'] || '-');
+        const duration = escapeHtml(p['指令継続'] || '');
         return `<div class="area-item" onclick="selectArea(${f._globalIndex})">
           <div>
-            <span class="name">${p['名前']}</span>
+            <span class="name">${escapeHtml(p['名前'])}</span>
             <div style="font-size:11px;color:#999;margin-top:2px">前回: ${lastSnow}${duration ? ' / 指令: ' + duration : ''}</div>
           </div>
           <span class="date" style="color:${cfg.color}">${date}</span>
@@ -3288,7 +3288,7 @@
         L.geoJSON(feat, {
           style: { color: color, fillColor: color, fillOpacity: 0.7, weight: 1, opacity: 0.8 },
         })
-        .bindTooltip(name + ' スパネ度: ' + zone.spane_index + '（' + zone.level + '）<br>除雪から' + zone.days_since_clearance + '日', { sticky: true })
+        .bindTooltip(escapeHtml(name) + ' スパネ度: ' + zone.spane_index + '（' + zone.level + '）<br>除雪から' + zone.days_since_clearance + '日', { sticky: true })
         .addTo(spaneLayer);
       });
     }
@@ -3366,7 +3366,7 @@
         let card = `<div style="border:1px solid ${borderColor};border-radius:6px;padding:8px;margin-bottom:6px;cursor:pointer;${hasStuck ? 'background:#fef2f2' : ''}" data-area="${safeNameAttr}" onclick="selectAreaByName(this.dataset.area)">`;
         card += `<div style="font-size:12px;font-weight:bold;color:${catColor};margin-bottom:3px">`;
         card += `<span style="font-size:9px;background:${catColor};color:#fff;padding:1px 5px;border-radius:4px;margin-right:4px">${catLabel}</span>`;
-        card += name;
+        card += escapeHtml(name);
         card += faceChip;
         card += `<span style="font-size:10px;color:#888;font-weight:normal;margin-left:6px">${snowText}</span>`;
         card += ' <span style="font-size:10px;color:#3498db">▶ 地図で見る</span>';
@@ -3428,12 +3428,12 @@
     function renderBusList(title, items, withType) {
       if (!items || items.length === 0) return '';
       let html = '<div class="bus-list">';
-      html += `<div class="bus-list-title">${title}</div>`;
+      html += `<div class="bus-list-title">${escapeHtml(title)}</div>`;
       items.forEach(item => {
         html += '<div class="bus-item">';
-        html += `<span class="route">${item.route || ''}</span>`;
-        if (withType && item.type) html += `（${item.type}）`;
-        if (item.detail) html += `: ${item.detail}`;
+        html += `<span class="route">${escapeHtml(item.route || '')}</span>`;
+        if (withType && item.type) html += `（${escapeHtml(item.type)}）`;
+        if (item.detail) html += `: ${escapeHtml(item.detail)}`;
         html += '</div>';
       });
       html += '</div>';
@@ -3465,7 +3465,7 @@
 
       let html = '<div class="bus-section">';
       html += `<h4 style="cursor:pointer;user-select:none" onclick="document.getElementById('bus-detail').style.display=document.getElementById('bus-detail').style.display==='none'?'block':'none'">🚌 市営バス運行状況${badge} <span style="font-size:11px;color:#888">▶</span></h4>`;
-      html += `<div class="bus-meta">最終更新: ${busStatusData.updated_at || '-'}</div>`;
+      html += `<div class="bus-meta">最終更新: ${escapeHtml(busStatusData.updated_at || '-')}</div>`;
       if (hasSuspended) {
         html += `<button id="bus-map-toggle" onclick="toggleBusLayers()" style="background:#f59e0b;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:bold;cursor:pointer;margin-bottom:8px">🗺 地図に表示</button>`;
       }
@@ -3474,8 +3474,8 @@
       if (busStatusData.next_update_notice) {
         const prep = busStatusData.next_update_notice;
         html += '<div class="bus-note">';
-        html += `${prep.date || ''} <span class="bus-badge">${prep.status || ''}</span><br>`;
-        html += `${prep.message || ''}`;
+        html += `${escapeHtml(prep.date || '')} <span class="bus-badge">${escapeHtml(prep.status || '')}</span><br>`;
+        html += `${escapeHtml(prep.message || '')}`;
         html += '</div>';
       }
 
@@ -3485,12 +3485,12 @@
 
       if (busStatusData.notes && busStatusData.notes.length > 0) {
         html += '<div class="bus-list"><div class="bus-list-title">備考</div>';
-        busStatusData.notes.forEach(n => { html += `<div class="bus-note">・${n}</div>`; });
+        busStatusData.notes.forEach(n => { html += `<div class="bus-note">・${escapeHtml(n)}</div>`; });
         html += '</div>';
       }
       if (busStatusData.contacts && busStatusData.contacts.length > 0) {
         html += '<div class="bus-list"><div class="bus-list-title">問い合わせ</div>';
-        busStatusData.contacts.forEach(c => { html += `<div class="bus-note">${c.name}: ${c.tel}</div>`; });
+        busStatusData.contacts.forEach(c => { html += `<div class="bus-note">${escapeHtml(c.name)}: ${escapeHtml(c.tel)}</div>`; });
         html += '</div>';
       }
 
@@ -3544,7 +3544,7 @@
           style: styleFeature,
           onEachFeature: function(feat, lyr) {
             // ツールチップ（ホバーで工区名表示）
-            lyr.bindTooltip(feat.properties['名前'], {
+            lyr.bindTooltip(escapeHtml(feat.properties['名前']), {
               sticky: true,
               direction: 'top',
               className: 'area-tooltip',
@@ -3567,7 +3567,7 @@
           const meta = areasMeta[feature.properties['名前']];
           if (meta && meta.centroid) {
             const areaName = feature.properties['名前'];
-            let labelHtml = areaName;
+            let labelHtml = escapeHtml(areaName);
             const risk = fmsRisk[areaName];
             if (risk && risk.stuck_total > 0) {
               labelHtml += `<span style="display:inline-block;background:#c0392b;color:#fff;font-size:8px;font-weight:bold;border-radius:6px;padding:0 3px;margin-left:2px;vertical-align:top;text-shadow:none;line-height:1.4">⚠${risk.stuck_total}</span>`;
@@ -3606,12 +3606,12 @@
           iconAnchor: [12, 12],
         });
         const marker = L.marker([site.lat, site.lng], { icon: icon });
-        let popupHtml = `<b>${site.name}</b><br>`;
-        popupHtml += `<span style="color:#666">${site.type}</span>`;
-        if (site.hours) popupHtml += `<br>受入時間: ${site.hours}`;
-        if (site.notes) popupHtml += `<br>${site.notes}`;
+        let popupHtml = `<b>${escapeHtml(site.name)}</b><br>`;
+        popupHtml += `<span style="color:#666">${escapeHtml(site.type)}</span>`;
+        if (site.hours) popupHtml += `<br>受入時間: ${escapeHtml(site.hours)}`;
+        if (site.notes) popupHtml += `<br>${escapeHtml(site.notes)}`;
         marker.bindPopup(popupHtml);
-        marker.bindTooltip(site.name, { direction: 'top', className: 'dump-tooltip' });
+        marker.bindTooltip(escapeHtml(site.name), { direction: 'top', className: 'dump-tooltip' });
         dumpSiteLayer.addLayer(marker);
       });
       if (layerVisibility.dump) dumpSiteLayer.addTo(map);
@@ -3633,13 +3633,13 @@
           iconAnchor: [11, 11],
         });
         const marker = L.marker([coords[1], coords[0]], { icon: icon });
-        let popupHtml = `<b>${props.name}</b><br>`;
-        popupHtml += `<span style="color:#666">${props.category} / ${func}</span><br>`;
-        popupHtml += `系統: ${props.system}`;
-        if (props.note) popupHtml += `<br>${props.note}`;
-        popupHtml += `<br><span style="font-size:10px;color:#aaa">出典: ${props.source}</span>`;
+        let popupHtml = `<b>${escapeHtml(props.name)}</b><br>`;
+        popupHtml += `<span style="color:#666">${escapeHtml(props.category)} / ${escapeHtml(func)}</span><br>`;
+        popupHtml += `系統: ${escapeHtml(props.system)}`;
+        if (props.note) popupHtml += `<br>${escapeHtml(props.note)}`;
+        popupHtml += `<br><span style="font-size:10px;color:#aaa">出典: ${escapeHtml(props.source)}</span>`;
         marker.bindPopup(popupHtml);
-        marker.bindTooltip(props.name, { direction: 'top', className: 'ryusetsu-tooltip' });
+        marker.bindTooltip(escapeHtml(props.name), { direction: 'top', className: 'ryusetsu-tooltip' });
         ryusetsukoLayer.addLayer(marker);
       });
       if (layerVisibility.ryusetsuko) ryusetsukoLayer.addTo(map);
@@ -3652,7 +3652,7 @@
         const lyr = L.geoJSON(feature, {
           style: { color: color, weight: 5, opacity: 0.8 },
         });
-        lyr.bindPopup(`<b>国道区間 #${feature.properties.id}</b><br>状況: ${status}<br><span style="color:#888;font-size:11px">${feature.properties.source}</span>`);
+        lyr.bindPopup(`<b>国道区間 #${escapeHtml(String(feature.properties.id))}</b><br>状況: ${escapeHtml(status)}<br><span style="color:#888;font-size:11px">${escapeHtml(feature.properties.source)}</span>`);
         lyr.bindTooltip(status, { sticky: true, direction: 'top' });
         kokudoLayer.addLayer(lyr);
       });
@@ -3684,20 +3684,20 @@
           });
 
           let popupHtml = `<div style="min-width:180px">`;
-          popupHtml += `<div style="font-size:14px;font-weight:bold;color:#dc2626;margin-bottom:4px">❌ ${props.name}</div>`;
-          popupHtml += `<div style="font-size:12px;margin-bottom:4px"><span style="background:#dc2626;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold">${props.status}</span></div>`;
-          popupHtml += `<div style="font-size:12px;margin-bottom:3px"><b>運休区間:</b> ${props.from_stop} ～ ${props.to_stop}</div>`;
+          popupHtml += `<div style="font-size:14px;font-weight:bold;color:#dc2626;margin-bottom:4px">❌ ${escapeHtml(props.name)}</div>`;
+          popupHtml += `<div style="font-size:12px;margin-bottom:4px"><span style="background:#dc2626;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold">${escapeHtml(props.status)}</span></div>`;
+          popupHtml += `<div style="font-size:12px;margin-bottom:3px"><b>運休区間:</b> ${escapeHtml(props.from_stop)} ～ ${escapeHtml(props.to_stop)}</div>`;
           if (props.detour_notice) {
-            popupHtml += `<div style="font-size:11px;color:#666;margin-bottom:3px;background:#fef2f2;padding:6px;border-radius:4px">${props.detour_notice}</div>`;
+            popupHtml += `<div style="font-size:11px;color:#666;margin-bottom:3px;background:#fef2f2;padding:6px;border-radius:4px">${escapeHtml(props.detour_notice)}</div>`;
           }
           if (props.stops && props.stops.length > 0) {
             popupHtml += `<div style="font-size:10px;color:#888;border-top:1px solid #eee;padding-top:4px;margin-top:4px">`;
-            popupHtml += `停留所: ${props.stops.map(s => s.name).join(' → ')}`;
+            popupHtml += `停留所: ${props.stops.map(s => escapeHtml(s.name)).join(' → ')}`;
             popupHtml += `</div>`;
           }
           popupHtml += `</div>`;
           busLine.bindPopup(popupHtml);
-          busLine.bindTooltip(`❌ ${props.name}（${props.status}）`, { sticky: true, direction: 'top' });
+          busLine.bindTooltip(`❌ ${escapeHtml(props.name)}（${escapeHtml(props.status)}）`, { sticky: true, direction: 'top' });
 
           // 停留所❌マーカー
           if (props.stops) {
@@ -3709,7 +3709,7 @@
                 iconAnchor: [9, 9],
               });
               const m = L.marker([stop.lat, stop.lng], { icon: icon });
-              m.bindTooltip(`❌ ${stop.name}（運休中）`, { direction: 'top', className: 'dump-tooltip' });
+              m.bindTooltip(`❌ ${escapeHtml(stop.name)}（運休中）`, { direction: 'top', className: 'dump-tooltip' });
               busLayer.addLayer(m);
             });
           }
@@ -3745,7 +3745,7 @@
         const label = quarter ? `${quarter}(${zoneName})` : zoneName;
         const lyr = L.geoJSON(feature, {
           style: { color: borderColor, weight: weight, fillColor: fillColor, fillOpacity: fillOpacity },
-        }).bindTooltip(`応援除雪 ${label}<br>${period.trim()}`, { sticky: true });
+        }).bindTooltip(`応援除雪 ${escapeHtml(label)}<br>${escapeHtml(period.trim())}`, { sticky: true });
         supportLayer.addLayer(lyr);
       });
       if (layerVisibility.support) supportLayer.addTo(map);
@@ -3765,25 +3765,26 @@
           iconAnchor: [11, 11],
         });
         const marker = L.marker([ev.lat, ev.lng], { icon: icon });
+        const safeUrl = (ev.url && /^https?:\/\//.test(ev.url)) ? ev.url : '#';
         const popupHtml = [
           `<div style="min-width:220px">`,
           `<div style="margin-bottom:4px"><span style="font-size:10px;background:${catColor};color:#fff;padding:2px 6px;border-radius:999px">${catLabel}</span></div>`,
-          `<div style="font-size:14px;font-weight:bold;color:#be185d;margin-bottom:4px">${ev.title || '子育てイベント'}</div>`,
+          `<div style="font-size:14px;font-weight:bold;color:#be185d;margin-bottom:4px">${escapeHtml(ev.title || '子育てイベント')}</div>`,
           `<div style="font-size:12px;line-height:1.6">`,
-          `<div><b>何月:</b> ${ev.month || '未設定'}</div>`,
-          `<div><b>何時:</b> ${ev.time || '未設定'}</div>`,
-          `<div><b>場所:</b> ${ev.place || '未設定'}</div>`,
-          `<div><b>内容:</b> ${ev.summary || '未設定'}</div>`,
-          ev.fee ? `<div><b>参加費:</b> ${ev.fee}</div>` : '',
+          `<div><b>何月:</b> ${escapeHtml(ev.month || '未設定')}</div>`,
+          `<div><b>何時:</b> ${escapeHtml(ev.time || '未設定')}</div>`,
+          `<div><b>場所:</b> ${escapeHtml(ev.place || '未設定')}</div>`,
+          `<div><b>内容:</b> ${escapeHtml(ev.summary || '未設定')}</div>`,
+          ev.fee ? `<div><b>参加費:</b> ${escapeHtml(ev.fee)}</div>` : '',
           `</div>`,
           `<div style="margin-top:8px">`,
-          `<a href="${ev.url || '#'}" target="_blank" rel="noopener" style="display:inline-block;background:#be185d;color:#fff;text-decoration:none;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:bold">${ev.apply || '申し込みはこちらから'}</a>`,
+          `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener" style="display:inline-block;background:#be185d;color:#fff;text-decoration:none;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:bold">${escapeHtml(ev.apply || '申し込みはこちらから')}</a>`,
           `</div>`,
-          ev.source ? `<div style="font-size:10px;color:#888;margin-top:6px">出典: ${ev.source}</div>` : '',
+          ev.source ? `<div style="font-size:10px;color:#888;margin-top:6px">出典: ${escapeHtml(ev.source)}</div>` : '',
           `</div>`,
         ].join('');
         marker.bindPopup(popupHtml);
-        marker.bindTooltip(ev.title || '子育てイベント', { direction: 'top', className: 'dump-tooltip' });
+        marker.bindTooltip(escapeHtml(ev.title) || '子育てイベント', { direction: 'top', className: 'dump-tooltip' });
         if (ev.category === 'private_general') {
           kidsPrivateLayer.addLayer(marker);
         } else {
@@ -3846,7 +3847,9 @@
         return;
       }
       box.className = '';
-      box.innerHTML = `<iframe class="video-embed" src="${FEATURE_VIDEO_URL}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      var safeVideoUrl = /^https:\/\/(www\.youtube\.com|player\.vimeo\.com)\//.test(FEATURE_VIDEO_URL) ? FEATURE_VIDEO_URL : '';
+      if (!safeVideoUrl) { box.className = 'video-empty'; box.textContent = '有効な動画URLを設定してください。'; return; }
+      box.innerHTML = `<iframe class="video-embed" src="${safeVideoUrl}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen sandbox="allow-scripts allow-same-origin"></iframe>`;
     }
     window.openFeatureModal = function() {
       renderFeatureVideo();
