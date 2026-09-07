@@ -1,8 +1,8 @@
 {
-  "updated_at": "2026-08-24",
+  "updated_at": "2026-09-07",
   "monitoring": {
-    "checked_at": "2026-08-24",
-    "next_check_at": "2026-09-07",
+    "checked_at": "2026-09-07",
+    "next_check_at": "2026-09-21",
     "check_interval_days": 14,
     "recent_days": 30,
     "recent_non_recurring_count": 0,
@@ -11,8 +11,8 @@
     "note": "直近30日に単発系イベントがないため、元ページ確認を推奨します。"
   },
   "window": {
-    "start_date": "2026-08-01",
-    "end_date": "2026-10-31",
+    "start_date": "2026-09-01",
+    "end_date": "2026-11-30",
     "future_months": 3,
     "note": "Run this script every 2 weeks to refresh the rolling window."
   },
