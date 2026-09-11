@@ -7,6 +7,8 @@ import re
 import urllib.request
 from html.parser import HTMLParser
 
+from sanitize_text import clean_record
+
 BASE_URL = "https://aomori100.shizentai.jp/oshirase"
 FETCH_TXT = f"{BASE_URL}/fetch.txt"
 OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "docs", "data", "bus_status.json")
@@ -298,7 +300,7 @@ def main():
 
     try:
         html = fetch_url(url)
-        data = parse_bus_html(html)
+        data = clean_record(parse_bus_html(html))
     except Exception as e:
         print(f"取得または解析に失敗: {e}")
         return

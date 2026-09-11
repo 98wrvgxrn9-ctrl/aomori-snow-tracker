@@ -113,6 +113,12 @@ def main() -> None:
     filtered = [x for x in items if in_window(x, start, end)]
     filtered.sort(key=lambda x: (x.get("event_start_date", ""), x.get("category", ""), x.get("title", "")))
 
+    # 公開JSONに載せるURLは https のみ許可（javascript: 等のスキームを排除）
+    for item in filtered:
+        url = item.get("url")
+        if url and not str(url).startswith("https://"):
+            item["url"] = ""
+
     out = {
         "updated_at": today.isoformat(),
         "monitoring": build_monitoring(
