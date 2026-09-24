@@ -1,7 +1,10 @@
-const CACHE_NAME = 'snow-tracker-v3';
+const CACHE_NAME = 'snow-tracker-v4';
 const SHELL_ASSETS = [
   './',
   './index.html',
+  './js/app.js',
+  './js/face-score.js',
+  './js/road-condition-predict.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',

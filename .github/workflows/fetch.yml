@@ -15,19 +15,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: リポジトリをチェックアウト
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       # 来シーズン再開時は以下の if: false を削除する
       - name: FMSデータリポジトリをチェックアウト
         if: false
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: 98wrvgxrn9-ctrl/fms-data
           path: fms-data
           token: ${{ secrets.FMS_REPO_TOKEN }}
 
       - name: Python セットアップ
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.11'
 
